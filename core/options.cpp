@@ -309,6 +309,16 @@ Options::Options()
 			"Manual flicker correction period"
 			"\nSet to 10000us to cancel 50Hz flicker."
 			"\nSet to 8333us to cancel 60Hz flicker.\n")
+		// Start Wassoc custom options for rpicam-raw
+		("parent-directory,pd", value<std::string>(&parent_directory),
+			"Set the directory in which the output directory will be placed")
+		("output-directory,od", value<std::string>(&output_directory),
+			"Set the directory in which to place the output file")
+		("max-directory-size,mds", value<unsigned int>(&max_directory_size),
+			"Sets the maximum directory size before creating a new one")
+		("total-frames,tf", value<unsigned int>(&total_frames),
+			"Sets the maximum number of frames saved before the process terminates")
+		// End Wassoc custom options
 		;
 	// clang-format on
 
