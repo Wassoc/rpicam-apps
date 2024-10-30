@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 FileOutput::FileOutput(VideoOptions const *options)
 	: Output(options), fp_(nullptr), count_(0), file_start_time_ms_(0)
 {
-	initializeCurrentOperatingDirectory()
+	initializeCurrentOperatingDirectory();
 }
 
 FileOutput::~FileOutput()
@@ -54,7 +54,7 @@ void FileOutput::openFile(int64_t timestamp_us)
 	{
 		// Generate the next output file name.
 		// We should expect a filename to be build by the parentDir + current_directory + output file name
-		fs::path pathToFile = options_->parent_directory / current_directory_ / options_->output
+		fs::path pathToFile = options_->parent_directory / current_directory_ / options_->output;
 		char filename[256];
 		int n = snprintf(filename, sizeof(filename), pathToFile.string().c_str(), count_);
 		count_++;
@@ -84,7 +84,7 @@ void FileOutput::closeFile()
 	}
 }
 
-void makeNewCurrentDir() {
+void FileOutput::makeNewCurrentDir() {
 	directory_count_++;
 
     try {
@@ -104,13 +104,13 @@ void makeNewCurrentDir() {
     }
 }
 
-unsigned int getDirectorySize(const fs::path& dirPath) {
-    unsigned int totalSize = 0
+unsigned int FileOutput::getDirectorySize(const fs::path& dirPath) {
+    unsigned int totalSize = 0;
 
     if (fs::exists(dirPath) && fs::is_directory(dirPath)) {
         for (const auto& entry : fs::recursive_directory_iterator(dirPath)) {
             if (fs::is_regular_file(entry)) {
-                totalSize += 1
+                totalSize += 1;
             }
         }
     } else {
@@ -121,7 +121,7 @@ unsigned int getDirectorySize(const fs::path& dirPath) {
     return totalSize;
 }
 
-std::string getOutputDirectoryPrefix() {
+std::string FileOutput::getOutputDirectoryPrefix() {
 	if(!options_->output_directory) {
 		return "";
 	}
@@ -137,7 +137,7 @@ std::string getOutputDirectoryPrefix() {
     return options_->output_directory;
 }
 
-std::string getSubstringAfterPrefix(const std::string& str, const std::string& prefix) {
+std::string FileOutput::getSubstringAfterPrefix(const std::string& str, const std::string& prefix) {
     // Find the position of the prefix
     size_t pos = str.find(prefix);
     
@@ -150,10 +150,10 @@ std::string getSubstringAfterPrefix(const std::string& str, const std::string& p
     return "";
 }
 
-void initializeCurrentOperatingDirectory() {
+void FileOutput::initializeCurrentOperatingDirectory() {
 	fs::path parentDir = options_->parent_directory;
-	std::string outputDirPrefix = getOutputDirectoryPrefix()
-	std::string outputDirWithHighestNumber
+	std::string outputDirPrefix = getOutputDirectoryPrefix();
+	std::string outputDirWithHighestNumber = 'default';
 	int maxNum = 0;
 
     if (fs::exists(parentDir) && fs::is_directory(parentDir)) {
