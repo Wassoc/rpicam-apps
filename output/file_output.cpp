@@ -54,7 +54,8 @@ void FileOutput::openFile(int64_t timestamp_us)
 	{
 		// Generate the next output file name.
 		// We should expect a filename to be build by the parentDir + current_directory + output file name
-		fs::path pathToFile = options_->parent_directory / current_directory_ / options_->output;
+		fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
+		fs::path pathToFile = pathToCurrentDir / options_->output;
 		char filename[256];
 		int n = snprintf(filename, sizeof(filename), pathToFile.string().c_str(), count_);
 		count_++;
@@ -89,15 +90,15 @@ void FileOutput::makeNewCurrentDir() {
 
     try {
 		char newDirName[256];
-		int n = snprintf(newDirName, sizeof(newDirName), options_->output_directory.c_str(), directory_count_);
-		fs::path newOperatingDir = options_->parent_directory / std::string(newDirName);
+		snprintf(newDirName, sizeof(newDirName), options_->output_directory.c_str(), directory_count_);
+		fs::path newOperatingDir = fs::path(options_->parent_directory) / std::string(newDirName);
         // Create the directory
         if (fs::create_directory(newOperatingDir)) {
-            std::cout << "Directory created: " << newDir << std::endl;
+            std::cout << "Directory created: " << newOperatingDir << std::endl;
 			directory_count_ = 0;
 			current_directory_ = newOperatingDir;
         } else {
-            std::cout << "Directory already exists: " << newDir << std::endl;
+            std::cout << "Directory already exists: " << newOperatingDir << std::endl;
         }
     } catch (const fs::filesystem_error& e) {
         std::cerr << "Error creating directory: " << e.what() << std::endl;
@@ -122,7 +123,7 @@ unsigned int FileOutput::getDirectorySize(const fs::path& dirPath) {
 }
 
 std::string FileOutput::getOutputDirectoryPrefix() {
-	if(!options_->output_directory) {
+	if(options_->output_directory == "") {
 		return "";
 	}
     // Find the position of the '%' character
@@ -153,7 +154,7 @@ std::string FileOutput::getSubstringAfterPrefix(const std::string& str, const st
 void FileOutput::initializeCurrentOperatingDirectory() {
 	fs::path parentDir = options_->parent_directory;
 	std::string outputDirPrefix = getOutputDirectoryPrefix();
-	std::string outputDirWithHighestNumber = 'default';
+	std::string outputDirWithHighestNumber = "default";
 	int maxNum = 0;
 
     if (fs::exists(parentDir) && fs::is_directory(parentDir)) {
@@ -168,7 +169,7 @@ void FileOutput::initializeCurrentOperatingDirectory() {
                 if (dirName.rfind(outputDirPrefix, 0) == 0) {
 					// For every directory that matches the prefix, get the number postfix. ex. Dir9876 would return 9876
 					// Check to see if the current dir has the highest number so far
-                    int dirNum = std::stoi(getSubstringAfterPrefix(dirname, outputDirPrefix));
+                    int dirNum = std::stoi(getSubstringAfterPrefix(dirName, outputDirPrefix));
 					if(dirNum >= maxNum) {
 						maxNum = dirNum;
 						outputDirWithHighestNumber = dirName;
@@ -178,7 +179,7 @@ void FileOutput::initializeCurrentOperatingDirectory() {
         }
 
 		// Now that we have the directory with the highest value, check to see if there is space in that dir
-		fs::path outputDirectoryPath = options_->parent_directory / outputDirWithHighestNumber;
+		fs::path outputDirectoryPath = fs::path(options_->parent_directory) / outputDirWithHighestNumber;
 		unsigned int dirSize = getDirectorySize(outputDirectoryPath);
 		if(dirSize < options_->max_directory_size) {
 			directory_count_ = dirSize;
