@@ -24,6 +24,9 @@ FileOutput::~FileOutput()
 
 void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
 {
+	if(current_directory_size_ > options_->max_directory_size) {
+		makeNewCurrentDir();
+	}
 	// We need to open a new file if we're in "segment" mode and our segment is full
 	// (though we have to wait for the next I frame), or if we're in "split" mode
 	// and recording is being restarted (this is necessarily an I-frame already).
@@ -44,6 +47,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 		if (options_->flush)
 			fflush(fp_);
 	}
+	current_directory_size_++;
 }
 
 void FileOutput::openFile(int64_t timestamp_us)
@@ -95,7 +99,7 @@ void FileOutput::makeNewCurrentDir() {
         // Create the directory
         if (fs::create_directory(newOperatingDir)) {
             std::cout << "Directory created: " << newOperatingDir << std::endl;
-			directory_count_ = 0;
+			current_directory_size_ = 0;
 			current_directory_ = newOperatingDir;
         } else {
             std::cout << "Directory already exists: " << newOperatingDir << std::endl;
@@ -151,6 +155,8 @@ std::string FileOutput::getSubstringAfterPrefix(const std::string& str, const st
     return "";
 }
 
+
+
 void FileOutput::initializeCurrentOperatingDirectory() {
 	fs::path parentDir = options_->parent_directory;
 	std::string outputDirPrefix = getOutputDirectoryPrefix();
@@ -182,8 +188,9 @@ void FileOutput::initializeCurrentOperatingDirectory() {
 		fs::path outputDirectoryPath = fs::path(options_->parent_directory) / outputDirWithHighestNumber;
 		unsigned int dirSize = getDirectorySize(outputDirectoryPath);
 		if(dirSize < options_->max_directory_size) {
-			directory_count_ = dirSize;
 			current_directory_ = outputDirectoryPath;
+			current_directory_size_ = dirSize;
+			directory_count_ = maxNum;
 		} else {
 			// Not enough space in the current Dir, make a new one
 			makeNewCurrentDir();

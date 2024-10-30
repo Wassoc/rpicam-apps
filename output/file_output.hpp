@@ -32,6 +32,7 @@ private:
 	FILE *fp_;
 	unsigned int count_;
 	unsigned int directory_count_;
+	unsigned int current_directory_size_;
 	fs::path current_directory_;
 	int64_t file_start_time_ms_;
 };
