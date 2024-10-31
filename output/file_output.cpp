@@ -74,7 +74,8 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	mockInfo.stride = 6112;
 	mockInfo.pixel_format = libcamera::formats::SRGGB12_CSI2P;
 
-	std::string fileNameString(filename) + ".dng";
+	std::string fileNameString(filename);
+	fileNameString += ".dng";
 
 	dng_save(mem, mockInfo, mockControlList, fileNameString, "mock-camera-model", NULL);
 
