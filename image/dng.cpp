@@ -313,7 +313,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	std::vector<uint16_t> buf(buf_stride_pixels_padded * info.height);
 	if (bayer_format.compressed)
 	{
-		uncompress(mem, info, &buf[0]);
+		uncompress((const uint8_t*)mem, info, &buf[0]);
 		buf_stride_pixels = buf_stride_pixels_padded;
 	}
 	else if (bayer_format.packed)
@@ -321,15 +321,15 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		switch (bayer_format.bits)
 		{
 		case 10:
-			unpack_10bit(mem, info, &buf[0]);
+			unpack_10bit((const uint8_t*)mem, info, &buf[0]);
 			break;
 		case 12:
-			unpack_12bit(mem, info, &buf[0]);
+			unpack_12bit((const uint8_t*)mem, info, &buf[0]);
 			break;
 		}
 	}
 	else
-		unpack_16bit(mem, info, &buf[0]);
+		unpack_16bit((const uint8_t*)mem, info, &buf[0]);
 
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
