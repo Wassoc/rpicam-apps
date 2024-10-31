@@ -302,6 +302,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	// Check the Bayer format and unpack it to u16.
 
 	auto it = bayer_formats.find(info.pixel_format);
+	int bitsPerSample = 16;
 	if (it == bayer_formats.end())
 		throw std::runtime_error("unsupported Bayer format");
 	BayerFormat const &bayer_format = it->second;
@@ -318,6 +319,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	}
 	else if (bayer_format.packed)
 	{
+		bitsPerSample = bayer_format.bits;
 		switch (bayer_format.bits)
 		{
 		case 10:
@@ -461,7 +463,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_SUBFILETYPE, 0);
 		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, info.width);
 		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, info.height);
-		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 16);
+		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
 		TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_CFA);
 		TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
 		TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
@@ -478,7 +480,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 		for (unsigned int y = 0; y < info.height; y++)
 		{
-			if (TIFFWriteScanline(tif, &buf[buf_stride_pixels * y], y, 0) != 1)
+			if (TIFFWriteScanline(tif, mem[buf_stride_pixels * y], y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
 
