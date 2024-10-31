@@ -76,7 +76,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 
 	std::string fileNameString(filename);
 
-	dng_save(std::vector<libcamera::Span<uint8_t>>(mem), mockInfo, mockControlList, fileNameString, "mock-camera-model", NULL);
+	dng_save((std::vector<libcamera::Span<uint8_t>>)&mem, mockInfo, mockControlList, fileNameString, "mock-camera-model", NULL);
 
 	current_directory_size_++;
 }
