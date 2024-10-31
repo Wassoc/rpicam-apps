@@ -66,9 +66,9 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	char filename[256];
 	snprintf(filename, sizeof(filename), pathToFile.string().c_str(), count_);
 
-	ControlList mockControlList();
+	libcamera::ControlList mockControlList();
 
-	StreamInfo mockInfo();
+	StreamInfo mockInfo;
 	mockInfo.width = 4056;
 	mockInfo.height = 3040;
 	mockInfo.stride = 6112;
