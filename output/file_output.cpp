@@ -8,6 +8,11 @@
 #include <string>
 
 #include "file_output.hpp"
+#include "image/image.hpp"
+#include <libcamera/control_ids.h>
+#include <libcamera/formats.h>
+#include "core/still_options.hpp"
+#include "core/stream_info.hpp"
 
 namespace fs = std::filesystem;
 
@@ -22,31 +27,57 @@ FileOutput::~FileOutput()
 	closeFile();
 }
 
+// void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
+// {
+// 	if(current_directory_size_ > options_->max_directory_size) {
+// 		makeNewCurrentDir();
+// 	}
+// 	// We need to open a new file if we're in "segment" mode and our segment is full
+// 	// (though we have to wait for the next I frame), or if we're in "split" mode
+// 	// and recording is being restarted (this is necessarily an I-frame already).
+// 	if (fp_ == nullptr ||
+// 		(options_->segment && (flags & FLAG_KEYFRAME) &&
+// 		 timestamp_us / 1000 - file_start_time_ms_ > options_->segment) ||
+// 		(options_->split && (flags & FLAG_RESTART)))
+// 	{
+// 		closeFile();
+// 		openFile(timestamp_us);
+// 	}
+
+// 	LOG(2, "FileOutput: output buffer " << mem << " size " << size);
+// 	if (fp_ && size)
+// 	{
+// 		if (fwrite(mem, size, 1, fp_) != 1)
+// 			throw std::runtime_error("failed to write output bytes");
+// 		if (options_->flush)
+// 			fflush(fp_);
+// 	}
+// 	current_directory_size_++;
+// }
+
 void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
 {
 	if(current_directory_size_ > options_->max_directory_size) {
 		makeNewCurrentDir();
 	}
-	// We need to open a new file if we're in "segment" mode and our segment is full
-	// (though we have to wait for the next I frame), or if we're in "split" mode
-	// and recording is being restarted (this is necessarily an I-frame already).
-	if (fp_ == nullptr ||
-		(options_->segment && (flags & FLAG_KEYFRAME) &&
-		 timestamp_us / 1000 - file_start_time_ms_ > options_->segment) ||
-		(options_->split && (flags & FLAG_RESTART)))
-	{
-		closeFile();
-		openFile(timestamp_us);
-	}
 
-	LOG(2, "FileOutput: output buffer " << mem << " size " << size);
-	if (fp_ && size)
-	{
-		if (fwrite(mem, size, 1, fp_) != 1)
-			throw std::runtime_error("failed to write output bytes");
-		if (options_->flush)
-			fflush(fp_);
-	}
+	fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
+	fs::path pathToFile = pathToCurrentDir / options_->output;
+	char filename[256];
+	snprintf(filename, sizeof(filename), pathToFile.string().c_str(), count_);
+
+	ControlList mockControlList();
+
+	StreamInfo mockInfo();
+	mockInfo.width = 4056;
+	mockInfo.height = 3040;
+	mockInfo.stride = 6112;
+	mockInfo.pixel_format = libcamera::formats::SRGGB12_CSI2P;
+
+	std::string fileNameString(filename);
+
+	dng_save((std::vector<libcamera::Span<uint8_t>>)mem, mockInfo, mockControlList, fileNameString, "mock-camera-model", null);
+
 	current_directory_size_++;
 }
 
