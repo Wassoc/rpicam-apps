@@ -480,7 +480,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_WHITELEVEL, 1, &white);
 		const uint16_t black_level_repeat_dim[] = { 2, 2 };
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
-		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
+		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 1, 256);
 
 		for (unsigned int y = 0; y < info.height; y++)
 		{
