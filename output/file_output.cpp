@@ -72,7 +72,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	mockInfo.width = 4056;
 	mockInfo.height = 3040;
 	mockInfo.stride = 6112;
-	mockInfo.pixel_format = libcamera::formats::SRGGB12_CSI2P;
+	mockInfo.pixel_format = libcamera::formats::SBGGR12_CSI2P;
 
 	std::string fileNameString(filename);
 	fileNameString += ".dng";
@@ -80,6 +80,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	dng_save(mem, mockInfo, mockControlList, fileNameString, "mock-camera-model", NULL);
 
 	current_directory_size_++;
+	count_++;
 }
 
 void FileOutput::openFile(int64_t timestamp_us)
