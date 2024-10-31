@@ -323,18 +323,15 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		switch (bayer_format.bits)
 		{
 		case 10:
-			// unpack_10bit((const uint8_t*)mem, info, &buf[0]);
+			unpack_10bit((const uint8_t*)mem, info, &buf[0]);
 			break;
 		case 12:
-			// unpack_12bit((const uint8_t*)mem, info, &buf[0]);
+			unpack_12bit((const uint8_t*)mem, info, &buf[0]);
 			break;
 		}
 	}
 	else {
 		unpack_16bit((const uint8_t*)mem, info, &buf[0]);
-		// hack to get build to work
-		unpack_12bit((const uint8_t*)mem, info, &buf[0]);
-		unpack_10bit((const uint8_t*)mem, info, &buf[0]);
 	}
 
 	// We need to fish out some metadata values for the DNG.
@@ -443,23 +440,23 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_SUBIFD, 1, &offset_subifd);
 		TIFFSetField(tif, TIFFTAG_EXIFIFD, offset_exififd);
 
-		// // Make a small greyscale thumbnail, just to give some clue what's in here.
-		// std::vector<uint8_t> thumb_buf((info.width >> 4) * 3);
+		// Make a small greyscale thumbnail, just to give some clue what's in here.
+		std::vector<uint8_t> thumb_buf((info.width >> 4) * 3);
 
-		// for (unsigned int y = 0; y < (info.height >> 4); y++)
-		// {
-		// 	for (unsigned int x = 0; x < (info.width >> 4); x++)
-		// 	{
-		// 		unsigned int off = (y * buf_stride_pixels + x) << 4;
-		// 		uint32_t grey =
-		// 			buf[off] + buf[off + 1] + buf[off + buf_stride_pixels] + buf[off + buf_stride_pixels + 1];
-		// 		grey = (grey << 14) >> bayer_format.bits;
-		// 		grey = sqrt((double)grey); // simple "gamma correction"
-		// 		thumb_buf[3 * x] = thumb_buf[3 * x + 1] = thumb_buf[3 * x + 2] = grey;
-		// 	}
-		// 	if (TIFFWriteScanline(tif, &thumb_buf[0], y, 0) != 1)
-		// 		throw std::runtime_error("error writing DNG thumbnail data");
-		// }
+		for (unsigned int y = 0; y < (info.height >> 4); y++)
+		{
+			for (unsigned int x = 0; x < (info.width >> 4); x++)
+			{
+				unsigned int off = (y * buf_stride_pixels + x) << 4;
+				uint32_t grey =
+					buf[off] + buf[off + 1] + buf[off + buf_stride_pixels] + buf[off + buf_stride_pixels + 1];
+				grey = (grey << 14) >> bayer_format.bits;
+				grey = sqrt((double)grey); // simple "gamma correction"
+				thumb_buf[3 * x] = thumb_buf[3 * x + 1] = thumb_buf[3 * x + 2] = grey;
+			}
+			if (TIFFWriteScanline(tif, &thumb_buf[0], y, 0) != 1)
+				throw std::runtime_error("error writing DNG thumbnail data");
+		}
 
 		TIFFWriteDirectory(tif);
 
@@ -480,7 +477,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_WHITELEVEL, 1, &white);
 		const uint16_t black_level_repeat_dim[] = { 2, 2 };
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
-		// TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
+		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
 		for (unsigned int y = 0; y < info.height; y++)
 		{
