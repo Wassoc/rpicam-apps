@@ -330,8 +330,12 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 			break;
 		}
 	}
-	else
+	else {
 		unpack_16bit((const uint8_t*)mem, info, &buf[0]);
+		// hack to get build to work
+		unpack_12bit((const uint8_t*)mem, info, &buf[0]);
+		unpack_10bit((const uint8_t*)mem, info, &buf[0]);
+	}
 
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
