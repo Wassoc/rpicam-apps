@@ -302,7 +302,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	// Check the Bayer format and unpack it to u16.
 
 	auto it = bayer_formats.find(info.pixel_format);
-	int bitsPerSample = 16;
+	// int bitsPerSample = 16;
 	if (it == bayer_formats.end())
 		throw std::runtime_error("unsupported Bayer format");
 	BayerFormat const &bayer_format = it->second;
@@ -319,7 +319,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	}
 	else if (bayer_format.packed)
 	{
-		bitsPerSample = bayer_format.bits;
+		// bitsPerSample = bayer_format.bits;
 		switch (bayer_format.bits)
 		{
 		case 10:
