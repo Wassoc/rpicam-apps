@@ -484,6 +484,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
+		LOG(1, "mem prior to writing is " << mem);
 		for (unsigned int y = 0; y < info.height; y++)
 		{
 			if (TIFFWriteScanline(tif, (uint8_t*)mem + (info.stride * y), y, 0) != 1)
