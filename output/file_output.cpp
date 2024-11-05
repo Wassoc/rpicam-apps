@@ -35,7 +35,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	if(options_->force_dng) {
 		saveDng(mem);
 	} else {
-		saveFile(mem, size, timestamp_us, flags)
+		saveFile(mem, size, timestamp_us, flags);
 	}
 
 }
