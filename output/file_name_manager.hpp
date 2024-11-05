@@ -27,7 +27,7 @@ public:
 
         // Generate the next output file name.
 		// We should expect a filename to be build by the parentDir + current_directory + output file name
-        std::string fileNameString(filename)
+        std::string fileNameString(filename);
 		fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
 		fs::path pathToFile = pathToCurrentDir / fileNameString;
 
