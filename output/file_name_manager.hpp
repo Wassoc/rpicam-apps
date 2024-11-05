@@ -3,6 +3,8 @@
 #include <filesystem>
 #include "core/options.hpp"
 
+namespace fs = std::filesystem;
+
 class FileNameManager {
 public:
     void FileManager(Options const *options) {
