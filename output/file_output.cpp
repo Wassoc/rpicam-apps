@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 FileOutput::FileOutput(VideoOptions const *options)
 	: Output(options), fp_(nullptr), count_(0), file_start_time_ms_(0)
 {
-	fileNameManager_ = new FileNameManager(options)
+	fileNameManager_ = new FileNameManager(options);
 }
 
 FileOutput::~FileOutput()
