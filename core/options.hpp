@@ -181,6 +181,7 @@ struct Options
 	std::string output_directory;
 	unsigned int max_directory_size;
 	unsigned int total_frames;
+	bool force_dng
 	// End Wassoc custom options
 
 	virtual bool Parse(int argc, char *argv[]);

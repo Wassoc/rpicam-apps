@@ -29,36 +29,42 @@ FileOutput::~FileOutput()
 	closeFile();
 }
 
-// void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
-// {
-// 	if(current_directory_size_ > options_->max_directory_size) {
-// 		makeNewCurrentDir();
-// 	}
-// 	// We need to open a new file if we're in "segment" mode and our segment is full
-// 	// (though we have to wait for the next I frame), or if we're in "split" mode
-// 	// and recording is being restarted (this is necessarily an I-frame already).
-// 	if (fp_ == nullptr ||
-// 		(options_->segment && (flags & FLAG_KEYFRAME) &&
-// 		 timestamp_us / 1000 - file_start_time_ms_ > options_->segment) ||
-// 		(options_->split && (flags & FLAG_RESTART)))
-// 	{
-// 		closeFile();
-// 		openFile(timestamp_us);
-// 	}
-
-// 	LOG(2, "FileOutput: output buffer " << mem << " size " << size);
-// 	if (fp_ && size)
-// 	{
-// 		if (fwrite(mem, size, 1, fp_) != 1)
-// 			throw std::runtime_error("failed to write output bytes");
-// 		if (options_->flush)
-// 			fflush(fp_);
-// 	}
-// 	current_directory_size_++;
-// }
-
 void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
 {
+
+	if(options_->force_dng) {
+		saveDng(mem);
+	} else {
+		saveFile(mem, size, timestamp_us, flags, filename)
+	}
+
+}
+
+void FileOutput::saveFile(void *mem, size_t size, int64_t timestamp_us, uint32_t flags) {
+	// We need to open a new file if we're in "segment" mode and our segment is full
+	// (though we have to wait for the next I frame), or if we're in "split" mode
+	// and recording is being restarted (this is necessarily an I-frame already).
+	if (fp_ == nullptr ||
+		(options_->segment && (flags & FLAG_KEYFRAME) &&
+		 timestamp_us / 1000 - file_start_time_ms_ > options_->segment) ||
+		(options_->split && (flags & FLAG_RESTART)))
+	{
+		closeFile();
+		openFile(timestamp_us);
+	}
+
+	LOG(2, "FileOutput: output buffer " << mem << " size " << size);
+	if (fp_ && size)
+	{
+		if (fwrite(mem, size, 1, fp_) != 1)
+			throw std::runtime_error("failed to write output bytes");
+		if (options_->flush)
+			fflush(fp_);
+	}
+}
+
+void FileOutput::saveDng(void *mem) {
+	// TODO figure out how to not mock steamInfo
 	libcamera::ControlList mockControlList;
 
 	StreamInfo mockInfo;
@@ -66,10 +72,10 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	mockInfo.height = 3040;
 	mockInfo.stride = 6112;
 	mockInfo.pixel_format = libcamera::formats::SBGGR12_CSI2P;
+	std::string filename = fileNameManager_.getNextFileName();
 
-	std::string fileNameString = fileNameManager_.getNextFileName();
-
-	dng_save(mem, mockInfo, mockControlList, fileNameString, "mock-camera-model", NULL);
+	// TODO decide on camera name
+	dng_save(mem, mockInfo, mockControlList, filename, "mock-camera-model", NULL);
 }
 
 void FileOutput::openFile(int64_t timestamp_us)

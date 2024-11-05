@@ -13,29 +13,36 @@ public:
     }
 
     std::string getNextFileName() {
+        // Making a new file will increase the current directory beyond its requested size
         if(current_directory_size_ >= options_->max_directory_size) {
 		    makeNewCurrentDir();
 	    }
-        // Generate the next output file name.
-		// We should expect a filename to be build by the parentDir + current_directory + output file name
-		fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
-		fs::path pathToFile = pathToCurrentDir / options_->output;
+        
 		char filename[256];
-		int n = snprintf(filename, sizeof(filename), pathToFile.string().c_str(), count_);
-		count_++;
-        current_directory_size_++;
+		int n = snprintf(filename, sizeof(filename), options_->output.c_str(), count_);
 		if (options_->wrap)
 			count_ = count_ % options_->wrap;
 		if (n < 0)
 			throw std::runtime_error("failed to generate filename");
 
-        std::string fileNameString(filename);
-        fileNameString += ".dng";
+        // Generate the next output file name.
+		// We should expect a filename to be build by the parentDir + current_directory + output file name
+        std::string fileNameString(filename)
+		fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
+		fs::path pathToFile = pathToCurrentDir / fileNameString;
 
-        return fileNameString;
+        if(options_->force_dng && pathToFile.extension() != DNG_EXTENSION) {
+            pathToFile.replace_extension(DNG_EXTENSION);
+        }
+
+        count_++;
+        current_directory_size_++;
+
+        return pathToFile.string();
     }
 
 private:
+    inline static const std::string DNG_EXTENSION = ".dng";
     Options const *options_;
     unsigned int count_;
 	unsigned int directory_count_;
@@ -51,11 +58,10 @@ private:
             fs::path newOperatingDir = fs::path(options_->parent_directory) / std::string(newDirName);
             // Create the directory
             if (fs::create_directory(newOperatingDir)) {
-                std::cout << "Directory created: " << newOperatingDir << std::endl;
                 current_directory_size_ = 0;
                 current_directory_ = newOperatingDir;
             } else {
-                std::cout << "Directory already exists: " << newOperatingDir << std::endl;
+                std::cerr << "Directory already exists: " << newOperatingDir << std::endl;
             }
         } catch (const fs::filesystem_error& e) {
             std::cerr << "Error creating directory: " << e.what() << std::endl;
