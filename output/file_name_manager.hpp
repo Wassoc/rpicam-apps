@@ -7,7 +7,7 @@ namespace fs = std::filesystem;
 
 class FileNameManager {
 public:
-    void FileManager(Options const *options) {
+    FileManager(Options const *options) {
         options_ = options;
         initializeCurrentOperatingDirectory();
     }
