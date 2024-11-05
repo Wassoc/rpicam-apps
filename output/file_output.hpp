@@ -8,6 +8,8 @@
 #pragma once
 
 #include <filesystem>
+
+#include "file_name_manager.hpp"
 #include "output.hpp"
 
 namespace fs = std::filesystem;
@@ -30,6 +32,7 @@ private:
 	std::string getSubstringAfterPrefix(const std::string& str, const std::string& prefix);
 	void initializeCurrentOperatingDirectory();
 	FILE *fp_;
+	FileNameManager fileNameManager_;
 	unsigned int count_;
 	unsigned int directory_count_;
 	unsigned int current_directory_size_;

@@ -8,6 +8,7 @@
 #include <string>
 
 #include "file_output.hpp"
+#include "file_name_manager.hpp"
 #include "image/image.hpp"
 #include <libcamera/control_ids.h>
 #include <libcamera/formats.h>
@@ -19,7 +20,7 @@ namespace fs = std::filesystem;
 FileOutput::FileOutput(VideoOptions const *options)
 	: Output(options), fp_(nullptr), count_(0), file_start_time_ms_(0)
 {
-	initializeCurrentOperatingDirectory();
+	fileNameManager_ = new FileNameManager(options)
 }
 
 FileOutput::~FileOutput()
@@ -57,15 +58,6 @@ FileOutput::~FileOutput()
 
 void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
 {
-	if(current_directory_size_ > options_->max_directory_size) {
-		makeNewCurrentDir();
-	}
-
-	fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
-	fs::path pathToFile = pathToCurrentDir / options_->output;
-	char filename[256];
-	snprintf(filename, sizeof(filename), pathToFile.string().c_str(), count_);
-
 	libcamera::ControlList mockControlList;
 
 	StreamInfo mockInfo;
@@ -74,13 +66,9 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	mockInfo.stride = 6112;
 	mockInfo.pixel_format = libcamera::formats::SBGGR12_CSI2P;
 
-	std::string fileNameString(filename);
-	fileNameString += ".dng";
+	std::string fileNameString = fileNameManager_.getNextFileName();
 
 	dng_save(mem, mockInfo, mockControlList, fileNameString, "mock-camera-model", NULL);
-
-	current_directory_size_++;
-	count_++;
 }
 
 void FileOutput::openFile(int64_t timestamp_us)
@@ -120,116 +108,4 @@ void FileOutput::closeFile()
 			fclose(fp_);
 		fp_ = nullptr;
 	}
-}
-
-void FileOutput::makeNewCurrentDir() {
-	directory_count_++;
-
-    try {
-		char newDirName[256];
-		snprintf(newDirName, sizeof(newDirName), options_->output_directory.c_str(), directory_count_);
-		fs::path newOperatingDir = fs::path(options_->parent_directory) / std::string(newDirName);
-        // Create the directory
-        if (fs::create_directory(newOperatingDir)) {
-            std::cout << "Directory created: " << newOperatingDir << std::endl;
-			current_directory_size_ = 0;
-			current_directory_ = newOperatingDir;
-        } else {
-            std::cout << "Directory already exists: " << newOperatingDir << std::endl;
-        }
-    } catch (const fs::filesystem_error& e) {
-        std::cerr << "Error creating directory: " << e.what() << std::endl;
-    }
-}
-
-unsigned int FileOutput::getDirectorySize(const fs::path& dirPath) {
-    unsigned int totalSize = 0;
-
-    if (fs::exists(dirPath) && fs::is_directory(dirPath)) {
-        for (const auto& entry : fs::recursive_directory_iterator(dirPath)) {
-            if (fs::is_regular_file(entry)) {
-                totalSize += 1;
-            }
-        }
-    } else {
-        std::cerr << "Invalid directory path." << std::endl;
-		totalSize = -1;
-    }
-
-    return totalSize;
-}
-
-std::string FileOutput::getOutputDirectoryPrefix() {
-	if(options_->output_directory == "") {
-		return "";
-	}
-    // Find the position of the '%' character
-    size_t pos = options_->output_directory.find('%');
-    
-    // If '%' is found, return the substring up to that position
-    if (pos != std::string::npos) {
-        return options_->output_directory.substr(0, pos);
-    }
-    
-    // If '%' is not found, return the whole string
-    return options_->output_directory;
-}
-
-std::string FileOutput::getSubstringAfterPrefix(const std::string& str, const std::string& prefix) {
-    // Find the position of the prefix
-    size_t pos = str.find(prefix);
-    
-    // If the prefix is found, return the substring after it
-    if (pos != std::string::npos) {
-        return str.substr(pos + prefix.length());
-    }
-    
-    // If the prefix is not found, return an empty string or handle as needed
-    return "";
-}
-
-
-
-void FileOutput::initializeCurrentOperatingDirectory() {
-	fs::path parentDir = options_->parent_directory;
-	std::string outputDirPrefix = getOutputDirectoryPrefix();
-	std::string outputDirWithHighestNumber = "default";
-	int maxNum = 0;
-
-    if (fs::exists(parentDir) && fs::is_directory(parentDir)) {
-		// find the directory with the highest value
-		// ex. a parent dir with Dir0001, Dir0002 ... Dir7777 will select Dir 7777
-        for (const auto& curDir : fs::directory_iterator(parentDir)) {
-            if (fs::is_directory(curDir)) {
-                std::string dirName = curDir.path().filename().string();
-                // Check to see if the current dir matches the prefix supplied by the options_->output_directory
-				// Example. Dir%05d should match all directories with the "Dir" prefix
-				// Possible TODO: Guard against directories with similar prefixes, Dir%05d would end up matching a directory with the name "DirectoriesAreAwesome9876"
-                if (dirName.rfind(outputDirPrefix, 0) == 0) {
-					// For every directory that matches the prefix, get the number postfix. ex. Dir9876 would return 9876
-					// Check to see if the current dir has the highest number so far
-                    int dirNum = std::stoi(getSubstringAfterPrefix(dirName, outputDirPrefix));
-					if(dirNum >= maxNum) {
-						maxNum = dirNum;
-						outputDirWithHighestNumber = dirName;
-					}
-                }
-            }
-        }
-
-		// Now that we have the directory with the highest value, check to see if there is space in that dir
-		fs::path outputDirectoryPath = fs::path(options_->parent_directory) / outputDirWithHighestNumber;
-		unsigned int dirSize = getDirectorySize(outputDirectoryPath);
-		if(dirSize < options_->max_directory_size) {
-			current_directory_ = outputDirectoryPath;
-			current_directory_size_ = dirSize;
-			directory_count_ = maxNum;
-		} else {
-			// Not enough space in the current Dir, make a new one
-			makeNewCurrentDir();
-		}
-
-    } else {
-        std::cerr << "Invalid directory path." << std::endl;
-    }
 }
