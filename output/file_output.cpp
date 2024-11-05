@@ -19,9 +19,9 @@
 namespace fs = std::filesystem;
 
 FileOutput::FileOutput(VideoOptions const *options)
-	: Output(options), fp_(nullptr), count_(0), file_start_time_ms_(0), fileNameManager_((Options*)options)
+	: Output(options), fp_(nullptr), file_start_time_ms_(0), fileNameManager_((Options*)options)
 {
-	// fileNameManager_ = FileNameManager((Options*)options);
+	// Nothing
 }
 
 FileOutput::~FileOutput()
@@ -35,7 +35,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	if(options_->force_dng) {
 		saveDng(mem);
 	} else {
-		saveFile(mem, size, timestamp_us, flags, filename)
+		saveFile(mem, size, timestamp_us, flags)
 	}
 
 }
@@ -85,9 +85,6 @@ void FileOutput::openFile(int64_t timestamp_us)
 	else if (!options_->output.empty())
 	{
 		std::string filename = fileNameManager_.getNextFileName();
-		if (options_->wrap)
-			count_ = count_ % options_->wrap;
-
 		fp_ = fopen(filename.c_str(), "w");
 		if (!fp_)
 			throw std::runtime_error("failed to open output file " + std::string(filename));

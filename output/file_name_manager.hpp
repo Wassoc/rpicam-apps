@@ -20,8 +20,6 @@ public:
         
 		char filename[256];
 		int n = snprintf(filename, sizeof(filename), options_->output.c_str(), count_);
-		if (options_->wrap)
-			count_ = count_ % options_->wrap;
 		if (n < 0)
 			throw std::runtime_error("failed to generate filename");
 
@@ -35,8 +33,10 @@ public:
             pathToFile.replace_extension(DNG_EXTENSION);
         }
 
-        count_++;
         current_directory_size_++;
+        count_++;
+        if (options_->wrap)
+			count_ = count_ % options_->wrap;
 
         return pathToFile.string();
     }
