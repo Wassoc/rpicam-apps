@@ -29,8 +29,8 @@ public:
 		if (n < 0)
 			throw std::runtime_error("failed to generate filename");
 
-        std::string fileNameString(filename)
-        fileNameString += ".dng"
+        std::string fileNameString(filename);
+        fileNameString += ".dng";
 
         return fileNameString;
     }
@@ -152,4 +152,4 @@ private:
         }
     }
     
-}
+};
