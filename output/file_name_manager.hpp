@@ -138,10 +138,10 @@ private:
             // Now that we have the directory with the highest value, check to see if there is space in that dir
             fs::path outputDirectoryPath = fs::path(options_->parent_directory) / outputDirWithHighestNumber;
             unsigned int dirSize = getDirectorySize(outputDirectoryPath);
+            directory_count_ = maxNum;
             if(dirSize < options_->max_directory_size) {
                 current_directory_ = outputDirectoryPath;
                 current_directory_size_ = dirSize;
-                directory_count_ = maxNum;
             } else {
                 // Not enough space in the current Dir, make a new one
                 makeNewCurrentDir();
