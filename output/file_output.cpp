@@ -19,9 +19,9 @@
 namespace fs = std::filesystem;
 
 FileOutput::FileOutput(VideoOptions const *options)
-	: Output(options), fp_(nullptr), count_(0), file_start_time_ms_(0)
+	: Output(options), fp_(nullptr), count_(0), file_start_time_ms_(0), fileNameManager_((Options*)options)
 {
-	fileNameManager_ = FileNameManager((Options*)options);
+	// fileNameManager_ = FileNameManager((Options*)options);
 }
 
 FileOutput::~FileOutput()
@@ -78,13 +78,7 @@ void FileOutput::openFile(int64_t timestamp_us)
 		fp_ = stdout;
 	else if (!options_->output.empty())
 	{
-		// Generate the next output file name.
-		// We should expect a filename to be build by the parentDir + current_directory + output file name
-		fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
-		fs::path pathToFile = pathToCurrentDir / options_->output;
-		char filename[256];
-		int n = snprintf(filename, sizeof(filename), pathToFile.string().c_str(), count_);
-		count_++;
+		std::string filename = fileNameManager_.getNextFileName();
 		if (options_->wrap)
 			count_ = count_ % options_->wrap;
 		if (n < 0)
