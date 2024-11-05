@@ -26,16 +26,8 @@ protected:
 private:
 	void openFile(int64_t timestamp_us);
 	void closeFile();
-	void makeNewCurrentDir();
-	unsigned int getDirectorySize(const fs::path& dirPath);
-	std::string getOutputDirectoryPrefix();
-	std::string getSubstringAfterPrefix(const std::string& str, const std::string& prefix);
-	void initializeCurrentOperatingDirectory();
 	FILE *fp_;
-	FileNameManager fileNameManager_;
 	unsigned int count_;
-	unsigned int directory_count_;
-	unsigned int current_directory_size_;
-	fs::path current_directory_;
 	int64_t file_start_time_ms_;
+	FileNameManager fileNameManager_;
 };
