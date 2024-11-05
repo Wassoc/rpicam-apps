@@ -81,10 +81,8 @@ void FileOutput::openFile(int64_t timestamp_us)
 		std::string filename = fileNameManager_.getNextFileName();
 		if (options_->wrap)
 			count_ = count_ % options_->wrap;
-		if (n < 0)
-			throw std::runtime_error("failed to generate filename");
 
-		fp_ = fopen(filename, "w");
+		fp_ = fopen(filename.c_str(), "w");
 		if (!fp_)
 			throw std::runtime_error("failed to open output file " + std::string(filename));
 		LOG(2, "FileOutput: opened output file " << filename);
