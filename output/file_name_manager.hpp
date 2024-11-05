@@ -13,7 +13,7 @@ public:
     }
 
     std::string getNextFileName() {
-        if(current_directory_size_ > options_->max_directory_size) {
+        if(current_directory_size_ >= options_->max_directory_size) {
 		    makeNewCurrentDir();
 	    }
         // Generate the next output file name.
