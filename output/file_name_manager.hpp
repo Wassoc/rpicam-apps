@@ -18,16 +18,16 @@ public:
 		    makeNewCurrentDir();
 	    }
         
-		char filename[256];
-		int n = snprintf(filename, sizeof(filename), options_->output.c_str(), count_);
-		if (n < 0)
-			throw std::runtime_error("failed to generate filename");
+        char filename[256];
+        int n = snprintf(filename, sizeof(filename), options_->output.c_str(), count_);
+        if (n < 0)
+            throw std::runtime_error("failed to generate filename");
 
         // Generate the next output file name.
-		// We should expect a filename to be build by the parentDir + current_directory + output file name
+        // We should expect a filename to be build by the parentDir + current_directory + output file name
         std::string fileNameString(filename);
-		fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
-		fs::path pathToFile = pathToCurrentDir / fileNameString;
+        fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
+        fs::path pathToFile = pathToCurrentDir / fileNameString;
 
         if(options_->force_dng && pathToFile.extension() != DNG_EXTENSION) {
             pathToFile.replace_extension(DNG_EXTENSION);
@@ -36,7 +36,7 @@ public:
         current_directory_size_++;
         count_++;
         if (options_->wrap)
-			count_ = count_ % options_->wrap;
+            count_ = count_ % options_->wrap;
 
         return pathToFile.string();
     }
@@ -45,9 +45,9 @@ private:
     inline static const std::string DNG_EXTENSION = ".dng";
     Options const *options_;
     unsigned int count_;
-	unsigned int directory_count_;
-	unsigned int current_directory_size_;
-	fs::path current_directory_;
+    unsigned int directory_count_;
+    unsigned int current_directory_size_;
+    fs::path current_directory_;
 
     void makeNewCurrentDir() {
         directory_count_++;
