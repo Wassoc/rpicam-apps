@@ -336,7 +336,8 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
-	float black_levels[] = { black, black, black, black };
+	// float black_levels[] = { black, black, black, black };
+	float black_levels[] = { 0, 0, 0, 0 };
 	auto bl = metadata.get(controls::SensorBlackLevels);
 	if (bl)
 	{
@@ -483,7 +484,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 		for (unsigned int y = 0; y < info.height; y++)
 		{
-			if (TIFFWriteScanline(tif, (uint8_t*)mem + (info.stride * y) + 3, y, 0) != 1)
+			if (TIFFWriteScanline(tif, (uint8_t*)mem + (info.stride * y) + 12, y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
 
