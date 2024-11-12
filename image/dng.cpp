@@ -104,8 +104,15 @@ static void unpack_12bit(uint8_t const *src, StreamInfo const &info, uint16_t *d
 		unsigned int x;
 		for (x = 0; x < w_align; x += 2, ptr += 3)
 		{
-			*dest++ = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
-			*dest++ = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
+			uint16_t val1 = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
+			uint16_t val2 = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
+			if(val1 < 257 || val2 < 257) {
+				LOG(1, "val1: " << val1 << "\tval2: " << val2);
+			}
+			*dest++ = val1;
+			*dest++ = val2;
+			// *dest++ = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
+			// *dest++ = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
 		}
 		if (x < info.width)
 			*dest++ = (ptr[x & 1] << 4) | ((ptr[2] >> ((x & 1) << 2)) & 15);
