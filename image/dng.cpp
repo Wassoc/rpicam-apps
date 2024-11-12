@@ -106,7 +106,7 @@ static void unpack_12bit(uint8_t const *src, StreamInfo const &info, uint16_t *d
 		{
 			uint16_t val1 = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
 			uint16_t val2 = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
-			if(val1 < 255 || val2 < 255) {
+			if(val1 < 240 || val2 < 240) {
 				LOG(1, "val1: " << val1 << "\tval2: " << val2);
 			}
 			*dest++ = val1;
