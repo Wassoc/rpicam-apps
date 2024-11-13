@@ -505,7 +505,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		for (unsigned int y = 0; y < info.height; y++)
 		{
 			void *writeLoc = (void*)((uint8_t*)mem + (info.stride * y));
-			std::cout << "loc: " << writeLoc;
+			std::cout << "loc: " << writeLoc << std::endl;
 			if (TIFFWriteScanline(tif, writeLoc, y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
