@@ -502,10 +502,15 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		std::cout << "mem1: " << (uint8_t*)mem + 1 << std::endl;
 		std::cout << "mem2: " << (uint8_t*)mem + 2 << std::endl;
 		std::cout << "mem0: " << mem << std::endl;
+		uint8_t *toPrint = (uint8_t*)mem;
+		for(unsigned int i = 0; i < 30; i++) {
+			std::cout << i << ":\t" << toPrint[i] << "\t" << std::bitset<8>(toPrint[i]) << std::endl;
+		}
+
 		for (unsigned int y = 0; y < info.height; y++)
 		{
 			void *writeLoc = (void*)((uint8_t*)mem + (info.stride * y));
-			std::cout << "loc: " << writeLoc << std::endl;
+			// std::cout << "loc: " << writeLoc << std::endl;
 			if (TIFFWriteScanline(tif, writeLoc, y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
