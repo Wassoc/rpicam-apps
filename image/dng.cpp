@@ -122,6 +122,30 @@ static void unpack_12bit(uint8_t const *src, StreamInfo const &info, uint16_t *d
 	}
 }
 
+static void unpack_12bit_as_12_bit(uint8_t const *src, StreamInfo const &info, uint8_t *dest)
+{
+	unsigned int w_align = info.width & ~1;
+	for (unsigned int y = 0; y < info.height; y++, src += info.stride)
+	{
+		uint8_t const *ptr = src;
+		unsigned int x;
+		for (x = 0; x < w_align; x += 2, ptr += 3)
+		{
+			uint16_t val1 = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
+			uint16_t val2 = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
+			uint8_t byte1 = val1 >> 4;
+			uint8_t byte2 = ((val1 & 0xf) << 4) | (val2 >> 8);
+			uint8_t byte3 = val2 & 0xff;
+			if(val1 < 240 || val2 < 240) {
+				LOG(1, "val1: " << val1 << "\tval2: " << val2);
+			}
+			*dest++ = byte1;
+			*dest++ = byte2;
+			*dest++ = byte3;
+		}
+	}
+}
+
 static void unpack_16bit(uint8_t const *src, StreamInfo const &info, uint16_t *dest)
 {
 	/* Assume the pixels in memory are already in native byte order */
@@ -323,6 +347,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	unsigned int buf_stride_pixels = info.width;
 	unsigned int buf_stride_pixels_padded = (buf_stride_pixels + 7) & ~7;
 	std::vector<uint16_t> buf(buf_stride_pixels_padded * info.height);
+	std::vector<uint8_t> bufAs12Bit((info.width * info.height) * 1.5);
 	if (bayer_format.compressed)
 	{
 		LOG(1, "uncompressing");
@@ -341,6 +366,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		case 12:
 			LOG(1, "Unpacking 12");
 			unpack_12bit((uint8_t const*)mem, info, &buf[0]);
+			unpack_12bit_as_12_bit((uint8_t const*)mem, info, &bufAs12Bit[0])
 			break;
 		}
 	}
@@ -508,19 +534,19 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 			std::cout << i << ":\t" << (int)toPrint[i] << "\t" << std::bitset<8>(toPrint[i]) << std::endl;
 		}
 
-		for (unsigned int y = 0; y < info.height; y++)
-		{
-			void *writeLoc = (void*)((uint8_t*)mem + (info.stride * y) - 1);
-			// std::cout << "loc: " << writeLoc << std::endl;
-			if (TIFFWriteScanline(tif, writeLoc, y, 0) != 1)
-				throw std::runtime_error("error writing DNG image data");
-		}
-
 		// for (unsigned int y = 0; y < info.height; y++)
 		// {
-		// 	if (TIFFWriteScanline(tif, &buf[buf_stride_pixels * y], y, 0) != 1)
+		// 	void *writeLoc = (void*)((uint8_t*)mem + (info.stride * y) - 1);
+		// 	// std::cout << "loc: " << writeLoc << std::endl;
+		// 	if (TIFFWriteScanline(tif, writeLoc, y, 0) != 1)
 		// 		throw std::runtime_error("error writing DNG image data");
 		// }
+
+		for (unsigned int y = 0; y < info.height; y++)
+		{
+			if (TIFFWriteScanline(tif, &bufAs12Bit[(info.width * 1.5) * y], y, 0) != 1)
+				throw std::runtime_error("error writing DNG image data");
+		}
 
 		// We have to checkpoint before the directory offset is valid.
 		TIFFCheckpointDirectory(tif);
