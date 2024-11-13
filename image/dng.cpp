@@ -366,7 +366,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		case 12:
 			LOG(1, "Unpacking 12");
 			unpack_12bit((uint8_t const*)mem, info, &buf[0]);
-			unpack_12bit_as_12_bit((uint8_t const*)mem, info, &bufAs12Bit[0])
+			unpack_12bit_as_12_bit((uint8_t const*)mem, info, &bufAs12Bit[0]);
 			break;
 		}
 	}
