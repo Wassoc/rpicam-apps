@@ -105,18 +105,10 @@ static void unpack_12bit(uint8_t const *src, StreamInfo const &info, uint16_t *d
 		unsigned int x;
 		for (x = 0; x < w_align; x += 2, ptr += 3)
 		{
-			uint16_t val1 = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
-			uint16_t val2 = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
-			if(val1 < 240 || val2 < 240) {
-				LOG(1, "val1: " << val1 << "\tval2: " << val2);
-			}
-			*dest++ = val1;
-			*dest++ = val2;
-			// *dest++ = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
-			// *dest++ = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
+			*dest++ = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
+			*dest++ = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
 		}
 		if (x < info.width) {
-			LOG(1, "x is less than width x: " << x << "\twidth: " << info.width);
 			*dest++ = (ptr[x & 1] << 4) | ((ptr[2] >> ((x & 1) << 2)) & 15);
 		}
 	}
@@ -136,9 +128,7 @@ static void unpack_12bit_as_12_bit(uint8_t const *src, StreamInfo const &info, u
 			uint8_t byte1 = val1 >> 4;
 			uint8_t byte2 = ((val1 & 0xf) << 4) | (val2 >> 8);
 			uint8_t byte3 = val2 & 0xff;
-			if(val1 < 240 || val2 < 240) {
-				LOG(1, "val1: " << val1 << "\tval2: " << val2);
-			}
+
 			*dest++ = byte1;
 			*dest++ = byte2;
 			*dest++ = byte3;
@@ -334,8 +324,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 			  std::string const &filename, std::string const &cam_model, StillOptions const *options)
 {
 	// Check the Bayer format and unpack it to u16.
-	std::cout << "mem at beginning: " << mem << std::endl;
-
 	auto it = bayer_formats.find(info.pixel_format);
 	// int bitsPerSample = 16;
 	if (it == bayer_formats.end())
@@ -350,7 +338,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	std::vector<uint8_t> bufAs12Bit((info.width * info.height) * 1.5);
 	if (bayer_format.compressed)
 	{
-		LOG(1, "uncompressing");
 		uncompress((uint8_t const*)mem, info, &buf[0]);
 		buf_stride_pixels = buf_stride_pixels_padded;
 	}
@@ -360,18 +347,15 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		switch (bayer_format.bits)
 		{
 		case 10:
-			LOG(1, "Unpacking 10");
 			unpack_10bit((uint8_t const*)mem, info, &buf[0]);
 			break;
 		case 12:
-			LOG(1, "Unpacking 12");
 			unpack_12bit((uint8_t const*)mem, info, &buf[0]);
 			unpack_12bit_as_12_bit((uint8_t const*)mem, info, &bufAs12Bit[0]);
 			break;
 		}
 	}
 	else {
-		LOG(1, "Unpacking 16");
 		unpack_16bit((uint8_t const*)mem, info, &buf[0]);
 	}
 
@@ -522,17 +506,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		const uint16_t black_level_repeat_dim[] = { 2, 2 };
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
-
-
-		// uint8_t *ptr = (uint8_t *)mem;
-		std::cout << "mem0: " << mem << std::endl;
-		std::cout << "mem1: " << (uint8_t*)mem + 1 << std::endl;
-		std::cout << "mem2: " << (uint8_t*)mem + 2 << std::endl;
-		std::cout << "mem0: " << mem << std::endl;
-		uint8_t *toPrint = (uint8_t*)mem - 1;
-		for(unsigned int i = 0; i < 30; i++) {
-			std::cout << i << ":\t" << (int)toPrint[i] << "\t" << std::bitset<8>(toPrint[i]) << std::endl;
-		}
 
 		// for (unsigned int y = 0; y < info.height; y++)
 		// {
