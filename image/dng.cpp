@@ -502,7 +502,7 @@ void dng_save(uint8_t *mem, StreamInfo const &info, ControlList const &metadata,
 		std::cout << "mem2: " << (void*)(mem + 2) << std::endl;
 		for (unsigned int y = 0; y < info.height; y++)
 		{
-			if (TIFFWriteScanline(tif, &mem[info.stride * y]), y, 0) != 1)
+			if (TIFFWriteScanline(tif, &mem[info.stride * y], y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
 
