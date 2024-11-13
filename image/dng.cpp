@@ -7,6 +7,7 @@
 
 #include <limits>
 #include <map>
+#include <bitset>
 
 #include <libcamera/control_ids.h>
 #include <libcamera/formats.h>
