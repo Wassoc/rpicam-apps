@@ -309,6 +309,7 @@ void dng_save(uint8_t *mem, StreamInfo const &info, ControlList const &metadata,
 			  std::string const &filename, std::string const &cam_model, StillOptions const *options)
 {
 	// Check the Bayer format and unpack it to u16.
+	std::cout << "mem at beginning: " << (void*)mem << std::endl;
 
 	auto it = bayer_formats.find(info.pixel_format);
 	// int bitsPerSample = 16;
