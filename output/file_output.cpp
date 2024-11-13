@@ -75,7 +75,7 @@ void FileOutput::saveDng(void *mem) {
 	std::string filename = fileNameManager_.getNextFileName();
 
 	// TODO decide on camera name
-	dng_save(mem, mockInfo, mockControlList, filename, "mock-camera-model", NULL);
+	dng_save((uint8_t *)mem, mockInfo, mockControlList, filename, "mock-camera-model", NULL);
 }
 
 void FileOutput::openFile(int64_t timestamp_us)
