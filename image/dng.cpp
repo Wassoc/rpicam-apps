@@ -505,7 +505,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		std::cout << "mem0: " << mem << std::endl;
 		uint8_t *toPrint = (uint8_t*)mem;
 		for(unsigned int i = 0; i < 30; i++) {
-			std::cout << i << ":\t" << toPrint[i] << "\t" << std::bitset<8>(toPrint[i]) << std::endl;
+			std::cout << i << ":\t" << (int)toPrint[i] << "\t" << std::bitset<8>(toPrint[i]) << std::endl;
 		}
 
 		for (unsigned int y = 0; y < info.height; y++)
