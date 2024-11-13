@@ -303,7 +303,7 @@ Matrix(float m0, float m1, float m2,
 	}
 };
 
-void dng_save(uint8_t const *mem, StreamInfo const &info, ControlList const &metadata,
+void dng_save(uint8_t *mem, StreamInfo const &info, ControlList const &metadata,
 			  std::string const &filename, std::string const &cam_model, StillOptions const *options)
 {
 	// Check the Bayer format and unpack it to u16.
