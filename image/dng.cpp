@@ -303,7 +303,7 @@ Matrix(float m0, float m1, float m2,
 	}
 };
 
-void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
+void dng_save(uint8_t const *mem, StreamInfo const &info, ControlList const &metadata,
 			  std::string const &filename, std::string const &cam_model, StillOptions const *options)
 {
 	// Check the Bayer format and unpack it to u16.
@@ -322,7 +322,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	if (bayer_format.compressed)
 	{
 		LOG(1, "uncompressing");
-		uncompress((const uint8_t*)mem, info, &buf[0]);
+		uncompress(mem, info, &buf[0]);
 		buf_stride_pixels = buf_stride_pixels_padded;
 	}
 	else if (bayer_format.packed)
@@ -332,17 +332,17 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		{
 		case 10:
 			LOG(1, "Unpacking 10");
-			unpack_10bit((const uint8_t*)mem, info, &buf[0]);
+			unpack_10bit(mem, info, &buf[0]);
 			break;
 		case 12:
 			LOG(1, "Unpacking 12");
-			unpack_12bit((const uint8_t*)mem, info, &buf[0]);
+			unpack_12bit(mem, info, &buf[0]);
 			break;
 		}
 	}
 	else {
 		LOG(1, "Unpacking 16");
-		unpack_16bit((const uint8_t*)mem, info, &buf[0]);
+		unpack_16bit(mem, info, &buf[0]);
 	}
 
 	// We need to fish out some metadata values for the DNG.
@@ -495,17 +495,17 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 
 		// uint8_t *ptr = (uint8_t *)mem;
-		// for (unsigned int y = 0; y < info.height; y++)
-		// {
-		// 	if (TIFFWriteScanline(tif, ptr + (info.stride * y), y, 0) != 1)
-		// 		throw std::runtime_error("error writing DNG image data");
-		// }
-
 		for (unsigned int y = 0; y < info.height; y++)
 		{
-			if (TIFFWriteScanline(tif, &buf[buf_stride_pixels * y], y, 0) != 1)
+			if (TIFFWriteScanline(tif, mem + (info.stride * y), y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
+
+		// for (unsigned int y = 0; y < info.height; y++)
+		// {
+		// 	if (TIFFWriteScanline(tif, &buf[buf_stride_pixels * y], y, 0) != 1)
+		// 		throw std::runtime_error("error writing DNG image data");
+		// }
 
 		// We have to checkpoint before the directory offset is valid.
 		TIFFCheckpointDirectory(tif);
