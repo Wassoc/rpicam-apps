@@ -114,8 +114,10 @@ static void unpack_12bit(uint8_t const *src, StreamInfo const &info, uint16_t *d
 			// *dest++ = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
 			// *dest++ = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
 		}
-		if (x < info.width)
+		if (x < info.width) {
+			LOG(1, "x is less than width x: " << x << "\twidth: " << info.width);
 			*dest++ = (ptr[x & 1] << 4) | ((ptr[2] >> ((x & 1) << 2)) & 15);
+		}
 	}
 }
 
@@ -495,6 +497,9 @@ void dng_save(uint8_t *mem, StreamInfo const &info, ControlList const &metadata,
 
 
 		// uint8_t *ptr = (uint8_t *)mem;
+		LOG(1, "mem0" << mem)
+		LOG(1, "mem1" << mem + 1)
+		LOG(1, "mem2" << mem + 2)
 		for (unsigned int y = 0; y < info.height; y++)
 		{
 			if (TIFFWriteScanline(tif, mem + (info.stride * y), y, 0) != 1)
