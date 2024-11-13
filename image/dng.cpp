@@ -499,7 +499,7 @@ void dng_save(uint8_t *mem, StreamInfo const &info, ControlList const &metadata,
 		// uint8_t *ptr = (uint8_t *)mem;
 		std::cout << "mem0: " << (void*)mem << std::endl;
 		std::cout << "mem1: " << (void*)(mem + 1) << std::endl;
-		std::cout << "mem2: " << (void*)mem + 2 << std::endl;
+		std::cout << "mem2: " << (void*)(mem + 2) << std::endl;
 		for (unsigned int y = 0; y < info.height; y++)
 		{
 			if (TIFFWriteScanline(tif, mem + (info.stride * y), y, 0) != 1)
