@@ -477,8 +477,8 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, info.width);
 		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, info.height);
 		// TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
-		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 16);
-		// TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 12);
+		// TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 16);
+		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 12);
 		TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_CFA);
 		TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
 		TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
@@ -493,17 +493,19 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
-		// for (unsigned int y = 0; y < info.height; y++)
-		// {
-		// 	if (TIFFWriteScanline(tif, (uint8_t*)mem + (info.stride * y) + 6, y, 0) != 1)
-		// 		throw std::runtime_error("error writing DNG image data");
-		// }
 
+		uint8_t const *ptr = mem;
 		for (unsigned int y = 0; y < info.height; y++)
 		{
-			if (TIFFWriteScanline(tif, &buf[buf_stride_pixels * y], y, 0) != 1)
+			if (TIFFWriteScanline(tif, ptr + (info.stride * y), y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
+
+		// for (unsigned int y = 0; y < info.height; y++)
+		// {
+		// 	if (TIFFWriteScanline(tif, &buf[buf_stride_pixels * y], y, 0) != 1)
+		// 		throw std::runtime_error("error writing DNG image data");
+		// }
 
 		// We have to checkpoint before the directory offset is valid.
 		TIFFCheckpointDirectory(tif);
