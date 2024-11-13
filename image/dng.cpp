@@ -494,7 +494,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
 
-		uint8_t const *ptr = mem;
+		uint8_t const *ptr = (uint8_t const*)mem;
 		for (unsigned int y = 0; y < info.height; y++)
 		{
 			if (TIFFWriteScanline(tif, ptr + (info.stride * y), y, 0) != 1)
