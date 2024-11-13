@@ -494,18 +494,18 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
 
-		uint8_t *ptr = (uint8_t *)mem;
-		for (unsigned int y = 0; y < info.height; y++)
-		{
-			if (TIFFWriteScanline(tif, ptr + (info.stride * y), y, 0) != 1)
-				throw std::runtime_error("error writing DNG image data");
-		}
-
+		// uint8_t *ptr = (uint8_t *)mem;
 		// for (unsigned int y = 0; y < info.height; y++)
 		// {
-		// 	if (TIFFWriteScanline(tif, &buf[buf_stride_pixels * y], y, 0) != 1)
+		// 	if (TIFFWriteScanline(tif, ptr + (info.stride * y), y, 0) != 1)
 		// 		throw std::runtime_error("error writing DNG image data");
 		// }
+
+		for (unsigned int y = 0; y < info.height; y++)
+		{
+			if (TIFFWriteScanline(tif, &buf[buf_stride_pixels * y], y, 0) != 1)
+				throw std::runtime_error("error writing DNG image data");
+		}
 
 		// We have to checkpoint before the directory offset is valid.
 		TIFFCheckpointDirectory(tif);
