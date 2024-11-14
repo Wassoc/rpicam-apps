@@ -8,6 +8,7 @@
 #pragma once
 
 #include <netinet/in.h>
+#include "core/stream_info.hpp"
 
 #include "output.hpp"
 
@@ -18,7 +19,7 @@ public:
 	~NetOutput();
 
 protected:
-	void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags) override;
+	void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags, StreamInfo info) override;
 
 private:
 	int fd_;

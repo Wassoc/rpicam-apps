@@ -186,7 +186,7 @@ void MjpegEncoder::outputThread()
 	got_item:
 		input_done_callback_(nullptr);
 
-		output_ready_callback_(item.mem, item.bytes_used, item.timestamp_us, true);
+		output_ready_callback_(item.mem, item.bytes_used, item.timestamp_us, true, NULL);
 		free(item.mem);
 		index++;
 	}

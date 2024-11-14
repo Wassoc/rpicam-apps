@@ -94,7 +94,7 @@ void Output::timestampReady(int64_t timestamp)
 		fflush(fp_timestamps_);
 }
 
-void Output::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
+void Output::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags, StreamInfo info)
 {
 	// Supply this so that a vanilla Output gives you an object that outputs no buffers.
 }

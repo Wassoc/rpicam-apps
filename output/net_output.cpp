@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
+#include "core/stream_info.hpp"
+
 #include "net_output.hpp"
 
 NetOutput::NetOutput(VideoOptions const *options) : Output(options)
@@ -98,7 +100,7 @@ NetOutput::~NetOutput()
 // Maximum size that sendto will accept.
 constexpr size_t MAX_UDP_SIZE = 65507;
 
-void NetOutput::outputBuffer(void *mem, size_t size, int64_t /*timestamp_us*/, uint32_t /*flags*/)
+void NetOutput::outputBuffer(void *mem, size_t size, int64_t /*timestamp_us*/, uint32_t /*flags*/, StreamInfo info)
 {
 	LOG(2, "NetOutput: output buffer " << mem << " size " << size);
 	size_t max_size = saddr_ptr_ ? MAX_UDP_SIZE : size;

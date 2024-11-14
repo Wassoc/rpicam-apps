@@ -12,6 +12,7 @@
 #include <atomic>
 
 #include "core/video_options.hpp"
+#include "core/stream_info.hpp"
 
 class Output
 {
@@ -31,7 +32,7 @@ protected:
 		FLAG_KEYFRAME = 1,
 		FLAG_RESTART = 2
 	};
-	virtual void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags);
+	virtual void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags, StreamInfo info);
 	virtual void timestampReady(int64_t timestamp);
 	VideoOptions const *options_;
 	FILE *fp_timestamps_;

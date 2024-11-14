@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "core/stream_info.hpp"
+
 #include "output.hpp"
 
 // A simple circular buffer implementation used by the CircularOutput class.
@@ -59,7 +61,7 @@ public:
 	~CircularOutput();
 
 protected:
-	void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags) override;
+	void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags, StreamInfo info) override;
 	void timestampReady(int64_t timestamp) override;
 
 private:

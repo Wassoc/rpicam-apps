@@ -362,7 +362,7 @@ void H264Encoder::outputThread()
 			}
 		}
 
-		output_ready_callback_(item.mem, item.bytes_used, item.timestamp_us, item.keyframe);
+		output_ready_callback_(item.mem, item.bytes_used, item.timestamp_us, item.keyframe, NULL);
 		v4l2_buffer buf = {};
 		v4l2_plane planes[VIDEO_MAX_PLANES] = {};
 		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;

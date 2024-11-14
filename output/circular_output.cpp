@@ -4,7 +4,7 @@
  *
  * circular_output.cpp - Write output to circular buffer which we save on exit.
  */
-
+#include "core/stream_info.hpp"
 #include "circular_output.hpp"
 
 // We're going to align the frames within the buffer to friendly byte boundaries
@@ -68,7 +68,7 @@ CircularOutput::~CircularOutput()
 	LOG(1, "Wrote " << total << " bytes (" << frames << " frames)");
 }
 
-void CircularOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
+void CircularOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags, StreamInfo info)
 {
 	// First make sure there's enough space.
 	int pad = (ALIGN - size) & (ALIGN - 1);
