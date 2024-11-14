@@ -29,7 +29,7 @@ FileOutput::~FileOutput()
 	closeFile();
 }
 
-void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
+void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags, StreamInfo info)
 {
 
 	if(options_->force_dng) {
@@ -63,7 +63,7 @@ void FileOutput::saveFile(void *mem, size_t size, int64_t timestamp_us, uint32_t
 	}
 }
 
-void FileOutput::saveDng(void *mem) {
+void FileOutput::saveDng(void *mem, StreamInfo info) {
 	// TODO figure out how to not mock steamInfo
 	libcamera::ControlList mockControlList;
 
@@ -75,7 +75,7 @@ void FileOutput::saveDng(void *mem) {
 	std::string filename = fileNameManager_.getNextFileName();
 
 	// TODO decide on camera name
-	dng_save(mem, mockInfo, mockControlList, filename, "mock-camera-model", NULL);
+	dng_save(mem, info, mockControlList, filename, "mock-camera-model", NULL);
 }
 
 void FileOutput::openFile(int64_t timestamp_us)

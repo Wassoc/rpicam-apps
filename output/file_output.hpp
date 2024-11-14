@@ -9,6 +9,8 @@
 
 #include <filesystem>
 
+#include "core/stream_info.hpp"
+
 #include "file_name_manager.hpp"
 #include "output.hpp"
 
@@ -21,12 +23,12 @@ public:
 	~FileOutput();
 
 protected:
-	void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags) override;
+	void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags, StreamInfo info) override;
 
 private:
 	void openFile(int64_t timestamp_us);
 	void closeFile();
-	void saveDng(void *mem);
+	void saveDng(void *mem, StreamInfo info );
 	void saveFile(void *mem, size_t size, int64_t timestamp_us, uint32_t flags);
 	FILE *fp_;
 	int64_t file_start_time_ms_;

@@ -32,6 +32,7 @@ private:
 		void *mem;
 		size_t length;
 		int64_t timestamp_us;
+		StreamInfo info;
 	};
 	std::queue<OutputItem> output_queue_;
 	std::mutex output_mutex_;

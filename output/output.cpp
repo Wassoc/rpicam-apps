@@ -52,7 +52,7 @@ void Output::Signal()
 	enable_ = !enable_;
 }
 
-void Output::OutputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe)
+void Output::OutputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe, StreamInfo info)
 {
 	// When output is enabled, we may have to wait for the next keyframe.
 	uint32_t flags = keyframe ? FLAG_KEYFRAME : FLAG_NONE;
@@ -70,7 +70,7 @@ void Output::OutputReady(void *mem, size_t size, int64_t timestamp_us, bool keyf
 		time_offset_ = timestamp_us - last_timestamp_;
 	last_timestamp_ = timestamp_us - time_offset_;
 
-	outputBuffer(mem, size, last_timestamp_, flags);
+	outputBuffer(mem, size, last_timestamp_, flags, info);
 
 	// Save timestamps to a file, if that was requested.
 	if (fp_timestamps_)
