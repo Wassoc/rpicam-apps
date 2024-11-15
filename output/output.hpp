@@ -27,6 +27,7 @@ public:
 	void setStreamInfo(StreamInfo info) {
 		this->streamInfo_ = info;
 	}
+	StreamInfo streamInfo_;
 
 protected:
 	enum Flag
@@ -55,7 +56,6 @@ private:
 	std::ofstream of_metadata_;
 	bool metadata_started_ = false;
 	std::queue<libcamera::ControlList> metadata_queue_;
-	StreamInfo streamInfo_;
 };
 
 void start_metadata_output(std::streambuf *buf, std::string fmt);
