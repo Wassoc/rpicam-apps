@@ -24,10 +24,10 @@ public:
 	virtual void Signal(); // a derived class might redefine what this means
 	void OutputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe);
 	void MetadataReady(libcamera::ControlList &metadata);
-	void setStreamInfo(StreamInfo *info) {
+	void setStreamInfo(StreamInfo* info) {
 		this->streamInfo_ = info;
 	}
-	Streaminfo *getStreamInfo() {
+	Streaminfo* getStreamInfo() {
 		return this->streamInfo_;
 	}
 
@@ -58,7 +58,7 @@ private:
 	std::ofstream of_metadata_;
 	bool metadata_started_ = false;
 	std::queue<libcamera::ControlList> metadata_queue_;
-	StreamInfo *streamInfo_ = nullptr;
+	StreamInfo* streamInfo_ = nullptr;
 };
 
 void start_metadata_output(std::streambuf *buf, std::string fmt);
