@@ -27,7 +27,7 @@ public:
 	void setStreamInfo(StreamInfo* info) {
 		this->streamInfo_ = info;
 	}
-	Streaminfo* getStreamInfo() {
+	StreamInfo* getStreamInfo() {
 		return this->streamInfo_;
 	}
 
