@@ -478,11 +478,13 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		if (!tif)
 			throw std::runtime_error("could not open file " + filename);
 
+		// Original multiplier was 4
+		unsigned int grayscaleMultiplier = 5;
 		// This is just the thumbnail, but put it first to help software that only
 		// reads the first IFD.
 		TIFFSetField(tif, TIFFTAG_SUBFILETYPE, 1);
-		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, info.width >> 4);
-		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, info.height >> 4);
+		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, info.width >> grayscaleMultiplier);
+		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, info.height >> grayscaleMultiplier);
 		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
 		TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 		TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
@@ -502,8 +504,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_EXIFIFD, offset_exififd);
 
 		// Make a small greyscale thumbnail, just to give some clue what's in here.
-		// Original multiplier was 4
-		unsigned int grayscaleMultiplier = 5;
 		std::vector<uint8_t> thumb_buf((info.width >> grayscaleMultiplier) * 3);
 
 		for (unsigned int y = 0; y < (info.height >> grayscaleMultiplier); y++)
