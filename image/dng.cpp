@@ -77,7 +77,7 @@ static const std::map<PixelFormat, BayerFormat> bayer_formats =
 	{ formats::BGGR_PISP_COMP1, { "BGGR-16-PISP", 16, TIFF_BGGR, false, true } },
 };
 
-static void unpack_10bit(uint8_t const *src, StreamInfo const &info, uint16_t *dest)
+static void unpack_10bit(uint8_t const *src, StreamInfo const &info, uint8_t *dest, uint16_t *dest16Bit)
 {
 	unsigned int w_align = info.width & ~3;
 	for (unsigned int y = 0; y < info.height; y++, src += info.stride)
@@ -86,70 +86,39 @@ static void unpack_10bit(uint8_t const *src, StreamInfo const &info, uint16_t *d
 		unsigned int x;
 		for (x = 0; x < w_align; x += 4, ptr += 5)
 		{
-			*dest++ = (ptr[0] << 2) | ((ptr[4] >> 0) & 3);
-			*dest++ = (ptr[1] << 2) | ((ptr[4] >> 2) & 3);
-			*dest++ = (ptr[2] << 2) | ((ptr[4] >> 4) & 3);
-			*dest++ = (ptr[3] << 2) | ((ptr[4] >> 6) & 3);
+			uint16_t val1 = (ptr[0] << 2) | ((ptr[4] >> 0) & 3);
+			uint16_t val2 = (ptr[1] << 2) | ((ptr[4] >> 2) & 3);
+			uint16_t val3 = (ptr[2] << 2) | ((ptr[4] >> 4) & 3);
+			uint16_t val4 = (ptr[3] << 2) | ((ptr[4] >> 6) & 3);
+			// Cut off the 2 LSB
+			uint8_t byte1 = val1 >> 2;
+			// get the 2 LSB of the val1, or'd with the 6 MSB of val2
+			uint8_t byte2 = ((val1 & 3) << 6) | (val2 >> 4);
+			// get the 4 LSB of val2 or'd with 4 MSB of val3
+			uint8_t byte3 = ((val2 & 0xf) << 4) | (val3 >> 6);
+			// get the 6 LSB of val3 abd the 2 MSB of val4
+			uint8_t byte4 = ((val3 & 0x3f) << 2) | (val4 >> 8);
+			// get 8 LSB of val4
+			uint8_t byte5 = val4 & 0xff;
+
+			*dest++ = byte1;
+			*dest++ = byte2;
+			*dest++ = byte3;
+			*dest++ = byte4;
+			*dest++ = byte5;
+
+			*dest16Bit++ = val1;
+			*dest16Bit++ = val2;
+			*dest16Bit++ = val3;
+			*dest16Bit++ = val4;
 		}
-		for (; x < info.width; x++)
-			*dest++ = (ptr[x & 3] << 2) | ((ptr[4] >> ((x & 3) << 1)) & 3);
+		// I don't believe this code is applicable for the use cases of widths of 4056, 2028 or 1012
+		// for (; x < info.width; x++)
+		// 	*dest++ = (ptr[x & 3] << 2) | ((ptr[4] >> ((x & 3) << 1)) & 3);
 	}
 }
 
-// static void unpack_10bit_as_8_bit_byte(uint8_t const *src, StreamInfo const &info, uint8_t *dest)
-// {
-// 	unsigned int w_align = info.width & ~3;
-// 	for (unsigned int y = 0; y < info.height; y++, src += info.stride)
-// 	{
-// 		uint8_t const *ptr = src;
-// 		unsigned int x;
-// 		for (x = 0; x < w_align; x += 4, ptr += 5)
-// 		{
-// 			uint16_t val1 = (ptr[0] << 2) | ((ptr[4] >> 0) & 3);
-// 			uint16_t val2 = (ptr[1] << 2) | ((ptr[4] >> 2) & 3);
-// 			uint16_t val3 = (ptr[2] << 2) | ((ptr[4] >> 4) & 3);
-// 			uint16_t val4 = (ptr[3] << 2) | ((ptr[4] >> 6) & 3);
-// 			// Cut off the 2 LSB
-// 			uint8_t byte1 = val1 >> 2;
-// 			// get the 2 LSB of the val1, or'd with the 6 MSB of val2
-// 			uint8_t byte2 = ((val1 & 3) << 6) | (val2 >> 4);
-// 			// get the 4 LSB of val2 or'd with 4 MSB of val3
-// 			uint8_t byte3 = ((val2 & 0xf) << 4) | (val3 >> 6);
-// 			// get the 6 LSB of val3 abd the 2 MSB of val4
-// 			uint8_t byte4 = ((val3 & 0x3f) << 2) | (val4 >> 8);
-// 			// get 8 LSB of val4
-// 			uint8_t byte5 = val4 & 0xff;
-
-// 			*dest++ = byte1;
-// 			*dest++ = byte2;
-// 			*dest++ = byte3;
-// 			*dest++ = byte4;
-// 			*dest++ = byte5;
-// 		}
-// 		for (; x < info.width; x++)
-// 			*dest++ = (ptr[x & 3] << 2) | ((ptr[4] >> ((x & 3) << 1)) & 3);
-// 	}
-// }
-
-static void unpack_12bit(uint8_t const *src, StreamInfo const &info, uint16_t *dest)
-{
-	unsigned int w_align = info.width & ~1;
-	for (unsigned int y = 0; y < info.height; y++, src += info.stride)
-	{
-		uint8_t const *ptr = src;
-		unsigned int x;
-		for (x = 0; x < w_align; x += 2, ptr += 3)
-		{
-			*dest++ = (ptr[0] << 4) | ((ptr[2] >> 0) & 15);
-			*dest++ = (ptr[1] << 4) | ((ptr[2] >> 4) & 15);
-		}
-		if (x < info.width) {
-			*dest++ = (ptr[x & 1] << 4) | ((ptr[2] >> ((x & 1) << 2)) & 15);
-		}
-	}
-}
-
-static void unpack_12bit_as_8_bit_byte(uint8_t const *src, StreamInfo const &info, uint8_t *dest)
+static void unpack_12bit(uint8_t const *src, StreamInfo const &info, uint8_t *dest, uint16_t *dest16Bit)
 {
 	unsigned int w_align = info.width & ~1;
 	for (unsigned int y = 0; y < info.height; y++, src += info.stride)
@@ -167,7 +136,14 @@ static void unpack_12bit_as_8_bit_byte(uint8_t const *src, StreamInfo const &inf
 			*dest++ = byte1;
 			*dest++ = byte2;
 			*dest++ = byte3;
+
+			*dest16Bit++ = val1;
+			*dest16Bit++ = val2;
 		}
+		// I don't believe this code is applicable for the use cases of widths of 4056, 2028 or 1012
+		// if (x < info.width) {
+		// 	*dest++ = (ptr[x & 1] << 4) | ((ptr[2] >> ((x & 1) << 2)) & 15);
+		// }
 	}
 }
 
@@ -369,11 +345,12 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	// Decompression will require a buffer that's 8 pixels aligned.
 	unsigned int buf_stride_pixels = info.width;
 	unsigned int buf_stride_pixels_padded = (buf_stride_pixels + 7) & ~7;
-	std::vector<uint16_t> buf(buf_stride_pixels_padded * info.height);
-	std::vector<uint8_t> bufAs12Bit((info.width * info.height) * 1.5);
+	double bytesPerPixel = bayer_format.bits / 8;
+	std::vector<uint8_t> buf8bit(info.width * bytesPerPixel * info.height);
+	std::vector<uint16_t> buf16Bit(buf_stride_pixels_padded * info.height);
 	if (bayer_format.compressed)
 	{
-		uncompress((uint8_t const*)mem, info, &buf[0]);
+		uncompress((uint8_t const*)mem, info, &buf16Bit[0]);
 		buf_stride_pixels = buf_stride_pixels_padded;
 	}
 	else if (bayer_format.packed)
@@ -382,16 +359,15 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		switch (bayer_format.bits)
 		{
 		case 10:
-			unpack_10bit((uint8_t const*)mem, info, &buf[0]);
+			unpack_10bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
 			break;
 		case 12:
-			unpack_12bit((uint8_t const*)mem, info, &buf[0]);
-			unpack_12bit_as_8_bit_byte((uint8_t const*)mem, info, &bufAs12Bit[0]);
+			unpack_12bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
 			break;
 		}
 	}
 	else {
-		unpack_16bit((uint8_t const*)mem, info, &buf[0]);
+		unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
 	}
 
 	// We need to fish out some metadata values for the DNG.
@@ -512,7 +488,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 			{
 				unsigned int off = (y * buf_stride_pixels + x) << grayscaleMultiplier;
 				uint32_t grey =
-					buf[off] + buf[off + 1] + buf[off + buf_stride_pixels] + buf[off + buf_stride_pixels + 1];
+					buf16Bit[off] + buf16Bit[off + 1] + buf16Bit[off + buf_stride_pixels] + buf16Bit[off + buf_stride_pixels + 1];
 				grey = (grey << 14) >> bayer_format.bits;
 				grey = sqrt((double)grey); // simple "gamma correction"
 				thumb_buf[3 * x] = thumb_buf[3 * x + 1] = thumb_buf[3 * x + 2] = grey;
@@ -544,17 +520,9 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
-		// for (unsigned int y = 0; y < info.height; y++)
-		// {
-		// 	void *writeLoc = (void*)((uint8_t*)mem + (info.stride * y) - 1);
-		// 	// std::cout << "loc: " << writeLoc << std::endl;
-		// 	if (TIFFWriteScanline(tif, writeLoc, y, 0) != 1)
-		// 		throw std::runtime_error("error writing DNG image data");
-		// }
-
 		for (unsigned int y = 0; y < info.height; y++)
 		{
-			if (TIFFWriteScanline(tif, &bufAs12Bit[(info.width * 1.5) * y], y, 0) != 1)
+			if (TIFFWriteScanline(tif, &buf8bit[(info.width * bytesPerPixel) * y], y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
 
