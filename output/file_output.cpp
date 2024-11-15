@@ -64,18 +64,12 @@ void FileOutput::saveFile(void *mem, size_t size, int64_t timestamp_us, uint32_t
 }
 
 void FileOutput::saveDng(void *mem) {
-	// TODO figure out how to not mock steamInfo
 	libcamera::ControlList mockControlList;
-
-	StreamInfo mockInfo;
-	mockInfo.width = 4056;
-	mockInfo.height = 3040;
-	mockInfo.stride = 6112;
-	mockInfo.pixel_format = libcamera::formats::SBGGR12_CSI2P;
 	std::string filename = fileNameManager_.getNextFileName();
+	StreamInfo *info = this->getStreamInfo();
 
 	// TODO decide on camera name
-	dng_save(mem, this->streamInfo_, mockControlList, filename, "mock-camera-model", NULL);
+	dng_save(mem, *info, mockControlList, filename, "mock-camera-model", NULL);
 }
 
 void FileOutput::openFile(int64_t timestamp_us)
