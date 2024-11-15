@@ -15,7 +15,7 @@
 
 Output::Output(VideoOptions const *options)
 	: options_(options), fp_timestamps_(nullptr), state_(WAITING_KEYFRAME), time_offset_(0), last_timestamp_(0),
-	  buf_metadata_(std::cout.rdbuf()), of_metadata_()
+	  buf_metadata_(std::cout.rdbuf()), of_metadata_(), streamInfo_(NULL)
 {
 	if (!options->save_pts.empty())
 	{
