@@ -96,6 +96,41 @@ static void unpack_10bit(uint8_t const *src, StreamInfo const &info, uint16_t *d
 	}
 }
 
+static void unpack_10bit_as_8_bit_byte(uint8_t const *src, StreamInfo const &info, uint8_t *dest)
+{
+	unsigned int w_align = info.width & ~3;
+	for (unsigned int y = 0; y < info.height; y++, src += info.stride)
+	{
+		uint8_t const *ptr = src;
+		unsigned int x;
+		for (x = 0; x < w_align; x += 4, ptr += 5)
+		{
+			uint16_t val1 = (ptr[0] << 2) | ((ptr[4] >> 0) & 3);
+			uint16_t val2 = (ptr[1] << 2) | ((ptr[4] >> 2) & 3);
+			uint16_t val3 = (ptr[2] << 2) | ((ptr[4] >> 4) & 3);
+			uint16_t val4 = (ptr[3] << 2) | ((ptr[4] >> 6) & 3);
+			// Cut off the 2 LSB
+			uint8_t byte1 = val1 >> 2;
+			// get the 2 LSB of the val1, or'd with the 6 MSB of val2
+			uint8_t byte2 = ((val1 & 3) << 6) | (val2 >> 4);
+			// get the 4 LSB of val2 or'd with 4 MSB of val3
+			uint8_t byte3 = ((val2 & 0xf) << 4) | (val3 >> 6);
+			// get the 6 LSB of val3 abd the 2 MSB of val4
+			uint8_t byte4 = ((val3 & 0x3f) << 2) | (val4 >> 8);
+			// get 8 LSB of val4
+			uint8_t byte5 = val4 & 0xff;
+
+			*dest++ = byte1;
+			*dest++ = byte2;
+			*dest++ = byte3;
+			*dest++ = byte4;
+			*dest++ = byte5;
+		}
+		for (; x < info.width; x++)
+			*dest++ = (ptr[x & 3] << 2) | ((ptr[4] >> ((x & 3) << 1)) & 3);
+	}
+}
+
 static void unpack_12bit(uint8_t const *src, StreamInfo const &info, uint16_t *dest)
 {
 	unsigned int w_align = info.width & ~1;
@@ -114,7 +149,7 @@ static void unpack_12bit(uint8_t const *src, StreamInfo const &info, uint16_t *d
 	}
 }
 
-static void unpack_12bit_as_12_bit(uint8_t const *src, StreamInfo const &info, uint8_t *dest)
+static void unpack_12bit_as_8_bit_byte(uint8_t const *src, StreamInfo const &info, uint8_t *dest)
 {
 	unsigned int w_align = info.width & ~1;
 	for (unsigned int y = 0; y < info.height; y++, src += info.stride)
@@ -351,7 +386,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 			break;
 		case 12:
 			unpack_12bit((uint8_t const*)mem, info, &buf[0]);
-			unpack_12bit_as_12_bit((uint8_t const*)mem, info, &bufAs12Bit[0]);
+			unpack_12bit_as_8_bit_byte((uint8_t const*)mem, info, &bufAs12Bit[0]);
 			break;
 		}
 	}
@@ -467,13 +502,15 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_EXIFIFD, offset_exififd);
 
 		// Make a small greyscale thumbnail, just to give some clue what's in here.
-		std::vector<uint8_t> thumb_buf((info.width >> 4) * 3);
+		// Original multiplier was 4
+		unsigned int grayscaleMultiplier = 5;
+		std::vector<uint8_t> thumb_buf((info.width >> grayscaleMultiplier) * 3);
 
-		for (unsigned int y = 0; y < (info.height >> 4); y++)
+		for (unsigned int y = 0; y < (info.height >> grayscaleMultiplier); y++)
 		{
-			for (unsigned int x = 0; x < (info.width >> 4); x++)
+			for (unsigned int x = 0; x < (info.width >> grayscaleMultiplier); x++)
 			{
-				unsigned int off = (y * buf_stride_pixels + x) << 4;
+				unsigned int off = (y * buf_stride_pixels + x) << grayscaleMultiplier;
 				uint32_t grey =
 					buf[off] + buf[off + 1] + buf[off + buf_stride_pixels] + buf[off + buf_stride_pixels + 1];
 				grey = (grey << 14) >> bayer_format.bits;
