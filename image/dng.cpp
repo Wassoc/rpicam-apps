@@ -341,6 +341,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		throw std::runtime_error("unsupported Bayer format");
 	BayerFormat const &bayer_format = it->second;
 	LOG(1, "Bayer format is " << bayer_format.name);
+	std::cout << "!!!!cout!!!!!" << std::endl;
 
 	// Decompression will require a buffer that's 8 pixels aligned.
 	unsigned int buf_stride_pixels = info.width;
