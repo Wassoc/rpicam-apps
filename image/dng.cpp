@@ -346,7 +346,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	unsigned int buf_stride_pixels = info.width;
 	unsigned int buf_stride_pixels_padded = (buf_stride_pixels + 7) & ~7;
 	double bytesPerPixel = bayer_format.bits / 8;
-	std::vector<uint8_t> buf8bit(info.width * bytesPerPixel * info.height);
+	std::vector<uint8_t> buf8bit(int(info.width * bytesPerPixel * info.height));
 	std::vector<uint16_t> buf16Bit(buf_stride_pixels_padded * info.height);
 	std::cout << "!!!!BEFORE!!!!!" << std::endl;
 	if (bayer_format.compressed)
