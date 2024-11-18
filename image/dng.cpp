@@ -507,10 +507,50 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 		TIFFWriteDirectory(tif);
 
+		unsigned int startX = (float)info.width * options->roi_x;
+		unsigned int startY = (float)info.height * options->roi_y;
+		unsigned int width = (float)info.width * options->roi_width;
+		unsigned int height = (float)info.height * options->roi_height;
+
+		if(bitsPerPixel == 10) {
+			// 4 pixels and packed into 5 bytes so go back to the the location where
+			// the a byte holds 8 MSB of a pixel
+			startX -= startX % 5;
+		} else if (bitsPerPixel == 12) {
+			// 2 pixels and packed into 3 bytes so lets go back to the the location where
+			// the a byte holds 8 MSB of a pixel
+			startX -= startX % 3;
+		}
+
+		if(width == 0) {
+			width = info.width - startX;
+		} else {
+			width -= startX;
+		}
+
+		if(height == 0) {
+			height = info.height;
+		} else {
+			height -= startY;
+		}
+
+		unsigned int endX = startX + width;
+		unsigned int endY = startY + height;
+
+		if(endX > info.width) {
+			endX = info.width;
+			width = endX - startX;
+		}
+
+		if(endY > info.height) {
+			endY = info.height;
+			height = endY - startY;
+		}
+
 		// The main image (actually tends to show up as "sub-image 1").
 		TIFFSetField(tif, TIFFTAG_SUBFILETYPE, 0);
-		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, info.width);
-		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, info.height);
+		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
+		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
 		// TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
 		// TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 16);
 		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerPixel);
@@ -528,9 +568,15 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
-		for (unsigned int y = 0; y < info.height; y++)
+		// for (unsigned int y = 0; y < info.height; y++)
+		// {
+		// 	if (TIFFWriteScanline(tif, &buf8bit[(info.width * bytesPerPixel) * y], y, 0) != 1)
+		// 		throw std::runtime_error("error writing DNG image data");
+		// }
+
+		for (unsigned int y = startY; y < endY; y++)
 		{
-			if (TIFFWriteScanline(tif, &buf8bit[(info.width * bytesPerPixel) * y], y, 0) != 1)
+			if (TIFFWriteScanline(tif, &buf8bit[((info.width * bytesPerPixel) * y) + startX], y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
 
