@@ -564,27 +564,14 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
-		// for (unsigned int y = 0; y < info.height; y++)
-		// {
-		// 	if (TIFFWriteScanline(tif, &buf8bit[(info.width * bytesPerPixel) * y], y, 0) != 1)
-		// 		throw std::runtime_error("error writing DNG image data");
-		// }
-
-		std::cout << "startX: " << startX << std::endl;
-		std::cout << "endX: " << endX << std::endl;
-		std::cout << "startY: " << startY << std::endl;
-		std::cout << "endY: " << endY << std::endl;
-		std::cout << "width: " << width << std::endl;
-		std::cout << "height: " << height << std::endl;
-		std::cout << "roix: " << options->roi_x << std::endl;
-		std::cout << "roiy: " << options->roi_y << std::endl;
-		std::cout << "roi_width: " << options->roi_width << std::endl;
-		std::cout << "roi_height: " << options->roi_height << std::endl;
-
+		unsigned int rowNum = 0
 		for (unsigned int y = startY; y < endY; y++)
 		{
-			if (TIFFWriteScanline(tif, &buf8bit[((info.width * bytesPerPixel) * y) + (startX * bytesPerPixel)], y - startY, 0) != 1)
+			unsigned int rowStartLocation = info.width * bytesPerPixel * y;
+			unsigned int roiOffset = startX * bytesPerPixel;
+			if (TIFFWriteScanline(tif, &buf8bit[rowStartLocation + roiOffset], rowNum, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
+			rowNum++;
 		}
 
 		// We have to checkpoint before the directory offset is valid.
