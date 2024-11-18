@@ -547,8 +547,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_SUBFILETYPE, 0);
 		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
 		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
-		// TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
-		// TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 16);
 		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerPixel);
 		TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_CFA);
 		TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
@@ -564,7 +562,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
-		unsigned int rowNum = 0
+		unsigned int rowNum = 0;
 		for (unsigned int y = startY; y < endY; y++)
 		{
 			unsigned int rowStartLocation = info.width * bytesPerPixel * y;
