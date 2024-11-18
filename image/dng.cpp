@@ -341,16 +341,14 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		throw std::runtime_error("unsupported Bayer format");
 	BayerFormat const &bayer_format = it->second;
 	LOG(1, "Bayer format is " << bayer_format.name);
-	std::cout << "!!!!cout!!!!!" << std::endl;
 
 	// Decompression will require a buffer that's 8 pixels aligned.
 	unsigned int buf_stride_pixels = info.width;
 	unsigned int buf_stride_pixels_padded = (buf_stride_pixels + 7) & ~7;
+	// 1.5 for 12 bit, 1.25 for 10 bit
 	double bytesPerPixel = (double)bayer_format.bits / 8.0;
-	std::cout << "got bytes per pixel: " << bytesPerPixel << std::endl;
-	std::vector<uint8_t> buf8bit(int(info.width * bytesPerPixel * info.height) + 1000);
+	std::vector<uint8_t> buf8bit(int(info.width * bytesPerPixel * info.height));
 	std::vector<uint16_t> buf16Bit(buf_stride_pixels_padded * info.height);
-	std::cout << "!!!!BEFORE!!!!!" << std::endl;
 	if (bayer_format.compressed)
 	{
 		uncompress((uint8_t const*)mem, info, &buf16Bit[0]);
@@ -373,12 +371,9 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
 	}
 
-	std::cout << "!!!!!!AFTER!!!!!!" << std::endl;
-
 	// We need to fish out some metadata values for the DNG.
-	// float black = 4096 * (1 << bayer_format.bits) / 65536.0;
-	// float black_levels[] = { black, black, black, black };
-	float black_levels[] = { 0, 0, 0, 0 };
+	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
+	float black_levels[] = { black, black, black, black };
 	auto bl = metadata.get(controls::SensorBlackLevels);
 	if (bl)
 	{
@@ -460,12 +455,18 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 			throw std::runtime_error("could not open file " + filename);
 
 		// Original multiplier was 4
-		unsigned int grayscaleMultiplier = 5;
+		// thumbnailSizeMultiplier == 3, 4056 x 3040 thumbnail is 450KB
+		// thumbnailSizeMultiplier == 4, 4056 x 3040 thumbnail is 144KB
+		// thumbnailSizeMultiplier == 5, 4056 x 3040 thumbnail is 36KB
+		// Thumbnail of 144KB produces an image that is of sufficient quality without being too big
+		// If we have a 4TB SSD, then we can expect around ~200k images to be acquired, with ~29GB disk being used by thumbnails.
+		// If we assume 19MB raw images, this prevents the user from user from acquiring ~1k images
+		unsigned int thumbnailSizeMultiplier = 4;
 		// This is just the thumbnail, but put it first to help software that only
 		// reads the first IFD.
 		TIFFSetField(tif, TIFFTAG_SUBFILETYPE, 1);
-		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, info.width >> grayscaleMultiplier);
-		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, info.height >> grayscaleMultiplier);
+		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, info.width >> thumbnailSizeMultiplier);
+		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, info.height >> thumbnailSizeMultiplier);
 		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
 		TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 		TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
@@ -485,13 +486,13 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_EXIFIFD, offset_exififd);
 
 		// Make a small greyscale thumbnail, just to give some clue what's in here.
-		std::vector<uint8_t> thumb_buf((info.width >> grayscaleMultiplier) * 3);
+		std::vector<uint8_t> thumb_buf((info.width >> thumbnailSizeMultiplier) * 3);
 
-		for (unsigned int y = 0; y < (info.height >> grayscaleMultiplier); y++)
+		for (unsigned int y = 0; y < (info.height >> thumbnailSizeMultiplier); y++)
 		{
-			for (unsigned int x = 0; x < (info.width >> grayscaleMultiplier); x++)
+			for (unsigned int x = 0; x < (info.width >> thumbnailSizeMultiplier); x++)
 			{
-				unsigned int off = (y * buf_stride_pixels + x) << grayscaleMultiplier;
+				unsigned int off = (y * buf_stride_pixels + x) << thumbnailSizeMultiplier;
 				uint32_t grey =
 					buf16Bit[off] + buf16Bit[off + 1] + buf16Bit[off + buf_stride_pixels] + buf16Bit[off + buf_stride_pixels + 1];
 				grey = (grey << 14) >> bayer_format.bits;
