@@ -346,7 +346,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	// Decompression will require a buffer that's 8 pixels aligned.
 	unsigned int buf_stride_pixels = info.width;
 	unsigned int buf_stride_pixels_padded = (buf_stride_pixels + 7) & ~7;
-	double bytesPerPixel = bayer_format.bits / 8;
+	double bytesPerPixel = (double)bayer_format.bits / 8.0;
 	std::cout << "got bytes per pixel: " << bytesPerPixel << std::endl;
 	std::vector<uint8_t> buf8bit(int(info.width * bytesPerPixel * info.height) + 1000);
 	std::vector<uint16_t> buf16Bit(buf_stride_pixels_padded * info.height);
