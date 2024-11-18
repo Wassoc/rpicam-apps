@@ -524,14 +524,10 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 		if(width == 0) {
 			width = info.width - startX;
-		} else {
-			width -= startX;
 		}
 
 		if(height == 0) {
 			height = info.height;
-		} else {
-			height -= startY;
 		}
 
 		unsigned int endX = startX + width;
