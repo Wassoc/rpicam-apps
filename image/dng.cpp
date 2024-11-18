@@ -347,6 +347,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	unsigned int buf_stride_pixels_padded = (buf_stride_pixels + 7) & ~7;
 	// 1.5 for 12 bit, 1.25 for 10 bit
 	double bytesPerPixel = (double)bayer_format.bits / 8.0;
+	int bitsPerPixel = 16;
 	std::vector<uint8_t> buf8bit(int(info.width * bytesPerPixel * info.height));
 	std::vector<uint16_t> buf16Bit(buf_stride_pixels_padded * info.height);
 	if (bayer_format.compressed)
@@ -360,9 +361,11 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		switch (bayer_format.bits)
 		{
 		case 10:
+			bitsPerPixel = 10;
 			unpack_10bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
 			break;
 		case 12:
+			bitsPerPixel = 12;
 			unpack_12bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
 			break;
 		}
@@ -511,7 +514,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, info.height);
 		// TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
 		// TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 16);
-		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 12);
+		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerPixel);
 		TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_CFA);
 		TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
 		TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
