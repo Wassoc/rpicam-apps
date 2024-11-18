@@ -357,15 +357,13 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	}
 	else if (bayer_format.packed)
 	{
-		// bitsPerSample = bayer_format.bits;
+		bitsPerPixel = bayer_format.bits;
 		switch (bayer_format.bits)
 		{
 		case 10:
-			bitsPerPixel = 10;
 			unpack_10bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
 			break;
 		case 12:
-			bitsPerPixel = 12;
 			unpack_12bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
 			break;
 		}
@@ -374,6 +372,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
 	}
 
+	std::cout << "got bpp: " << bitsPerPixel << std::endl;
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
 	float black_levels[] = { black, black, black, black };
