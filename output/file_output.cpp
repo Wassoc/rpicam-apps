@@ -69,7 +69,7 @@ void FileOutput::saveDng(void *mem) {
 	StreamInfo *info = this->getStreamInfo();
 
 	// TODO decide on camera name
-	dng_save(mem, *info, mockControlList, filename, "mock-camera-model", static_cast<const Options*>(options_));
+	dng_save(mem, *info, mockControlList, filename, "mock-camera-model", (const Options*)options_);
 }
 
 void FileOutput::openFile(int64_t timestamp_us)
