@@ -515,11 +515,11 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		if(bitsPerPixel == 10) {
 			// 4 pixels and packed into 5 bytes so go back to the the location where
 			// the a byte holds 8 MSB of a pixel
-			startX -= startX % 5;
+			startX -= startX % 4;
 		} else if (bitsPerPixel == 12) {
 			// 2 pixels and packed into 3 bytes so lets go back to the the location where
 			// the a byte holds 8 MSB of a pixel
-			startX -= startX % 3;
+			startX -= startX % 2;
 		}
 
 		if(width == 0) {
@@ -574,9 +574,20 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		// 		throw std::runtime_error("error writing DNG image data");
 		// }
 
+		std::cout << "startX: " << startX << std::endl;
+		std::cout << "endX: " << endX << std::endl;
+		std::cout << "startY: " << startY << std::endl;
+		std::cout << "endY: " << endY << std::endl;
+		std::cout << "width: " << width << std::endl;
+		std::cout << "height: " << height << std::endl;
+		std::cout << "roix: " << options->roi_x << std::endl;
+		std::cout << "roiy: " << options->roi_y << std::endl;
+		std::cout << "roi_width: " << options->roi_width << std::endl;
+		std::cout << "roi_height: " << options->roi_height << std::endl;
+
 		for (unsigned int y = startY; y < endY; y++)
 		{
-			if (TIFFWriteScanline(tif, &buf8bit[((info.width * bytesPerPixel) * y) + startX], y, 0) != 1)
+			if (TIFFWriteScanline(tif, &buf8bit[((info.width * bytesPerPixel) * y) + (startX * bytesPerPixel)], y, 0) != 1)
 				throw std::runtime_error("error writing DNG image data");
 		}
 
