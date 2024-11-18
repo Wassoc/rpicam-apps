@@ -15,6 +15,7 @@
 #include <tiffio.h>
 
 #include "core/still_options.hpp"
+#include "core/options.hpp"
 #include "core/stream_info.hpp"
 
 #ifndef MAKE_STRING
@@ -332,7 +333,7 @@ Matrix(float m0, float m1, float m2,
 };
 
 void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
-			  std::string const &filename, std::string const &cam_model, StillOptions const *options)
+			  std::string const &filename, std::string const &cam_model, Options const *options)
 {
 	// Check the Bayer format and unpack it to u16.
 	auto it = bayer_formats.find(info.pixel_format);
@@ -372,7 +373,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
 	}
 
-	std::cout << "got bpp: " << bitsPerPixel << std::endl;
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
 	float black_levels[] = { black, black, black, black };
