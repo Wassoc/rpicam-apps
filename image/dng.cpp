@@ -527,7 +527,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, st
 	}
 	float black_levels[] = { black, black, black, black };
 	auto bl = metadata.get(controls::SensorBlackLevels);
-	if (bl)
+	if (bl && !force12bit && !force10bit && !force8bit)
 	{
 		// levels is in the order R, Gr, Gb, B. Re-order it for the actual bayer order.
 		for (int i = 0; i < 4; i++)
