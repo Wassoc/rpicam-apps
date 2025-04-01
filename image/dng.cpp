@@ -440,7 +440,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, st
 		uncompress((uint8_t const *)mem, info, &buf16Bit[0]);
 		buf_stride_pixels = buf_stride_pixels_padded;
 
-		cout << "is compressed, bayer_format.bits: " << bayer_format.bits << endl;
+		std::cout << "is compressed, bayer_format.bits: " << bayer_format.bits << std::endl;
 
 		// if (force12bit && bayer_format.bits == 16) {
 		// 	bitsPerPixel = 12;
@@ -481,7 +481,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, st
 	}
 	else
 	{
-		cout << "is not compressed, bayer_format.bits: " << bayer_format.bits << endl;
+		std::cout << "is not compressed, bayer_format.bits: " << bayer_format.bits << std::endl;
 		unpack_16bit((uint8_t const *)mem, info, &buf16Bit[0]);
 	}
 
