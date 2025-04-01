@@ -468,6 +468,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, st
 		{
 			bitsPerPixel = 12;
 			from_16bit_to_12bit(&buf16Bit[0], info, &buf8bit[0]);
+			std::cout << "converted to 12bit" << std::endl;
 		}
 	}
 	else if (bayer_format.packed)
