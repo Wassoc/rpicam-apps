@@ -602,6 +602,18 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, st
 		if (!tif)
 			throw std::runtime_error("could not open file " + filename);
 
+		if (force12bit)
+		{
+			white = 4095;
+		}
+		else if (force10bit)
+		{
+			white = 1023;
+		}
+		else if (force8bit)
+		{
+			white = 255;
+		}
 		// Original multiplier was 4
 		// thumbnailSizeMultiplier == 3, 4056 x 3040 thumbnail is 450KB
 		// thumbnailSizeMultiplier == 4, 4056 x 3040 thumbnail is 144KB
