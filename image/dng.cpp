@@ -223,7 +223,7 @@ static void unpack_12bit_to_10bit(uint8_t const *src, StreamInfo const &info, ui
 	}
 }
 
-static void 16bit_to_12bit(uint16_t const *src, StreamInfo const &info, uint8_t *dest)
+static void from_16bit_to_12bit(uint16_t const *src, StreamInfo const &info, uint8_t *dest)
 {
 	unsigned int w_align = info.width & ~1;
 	for (unsigned int y = 0; y < info.height; y++, src += info.stride)
@@ -467,7 +467,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, st
 		if (force12bit && bayer_format.bits == 16)
 		{
 			bitsPerPixel = 12;
-			16bit_to_12bit(&buf16Bit[0], info, &buf8bit[0]);
+			from_16bit_to_12bit(&buf16Bit[0], info, &buf8bit[0]);
 		}
 	}
 	else if (bayer_format.packed)
