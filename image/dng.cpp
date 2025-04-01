@@ -521,6 +521,10 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, st
 		// 64 is the calculated number, but adding 4 makes it look better
 		black = 64 + 4;
 	}
+	else if (force12bit)
+	{
+		black = 256;
+	}
 	float black_levels[] = { black, black, black, black };
 	auto bl = metadata.get(controls::SensorBlackLevels);
 	if (bl)
