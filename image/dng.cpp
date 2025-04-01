@@ -223,6 +223,28 @@ static void unpack_12bit_to_10bit(uint8_t const *src, StreamInfo const &info, ui
 	}
 }
 
+static void 16bit_to_12bit(uint16_t const *src, StreamInfo const &info, uint8_t *dest)
+{
+	unsigned int w_align = info.width & ~1;
+	for (unsigned int y = 0; y < info.height; y++, src += info.stride)
+	{
+		uint16_t const *ptr = src;
+		for (unsigned int x = 0; x < w_align; x += 2, ptr += 2)
+		{
+			uint16_t pixel_val1 = ptr[0];
+			uint16_t pixel_val2 = ptr[1];
+			uint16_t val1_as_12bit = ((float)pixel_val1 / 65535.f) * 4095;
+			uint16_t val2_as_12bit = ((float)pixel_val2 / 65535.f) * 4095;
+			uint8_t byte1 = val1_as_12bit >> 4;
+			uint8_t byte2 = (val1_as_12bit & 0xf) | (val2_as_12bit >> 8);
+			uint8_t byte3 = val2_as_12bit & 0xff;
+
+			*dest++ = byte1;
+			*dest++ = byte2;
+			*dest++ = byte3;
+		}
+	}
+}
 static void unpack_16bit(uint8_t const *src, StreamInfo const &info, uint16_t *dest)
 {
 	/* Assume the pixels in memory are already in native byte order */
@@ -442,9 +464,11 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, st
 
 		std::cout << "is compressed, bayer_format.bits: " << bayer_format.bits << std::endl;
 
-		// if (force12bit && bayer_format.bits == 16) {
-		// 	bitsPerPixel = 12;
-		// }
+		if (force12bit && bayer_format.bits == 16)
+		{
+			bitsPerPixel = 12;
+			16bit_to_12bit(&buf16Bit[0], info, &buf8bit[0]);
+		}
 	}
 	else if (bayer_format.packed)
 	{
@@ -481,7 +505,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, st
 	}
 	else
 	{
-		std::cout << "is not compressed, bayer_format.bits: " << bayer_format.bits << std::endl;
 		unpack_16bit((uint8_t const *)mem, info, &buf16Bit[0]);
 	}
 
