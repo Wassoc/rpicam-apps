@@ -236,7 +236,7 @@ static void from_16bit_to_12bit(uint16_t const *src, StreamInfo const &info, uin
 			uint16_t val1_as_12bit = ((float)pixel_val1 / 65535.f) * 4095;
 			uint16_t val2_as_12bit = ((float)pixel_val2 / 65535.f) * 4095;
 			uint8_t byte1 = val1_as_12bit >> 4;
-			uint8_t byte2 = (val1_as_12bit & 0xf) | (val2_as_12bit >> 8);
+			uint8_t byte2 = (val1_as_12bit & 0xf) << 4 | (val2_as_12bit >> 8);
 			uint8_t byte3 = val2_as_12bit & 0xff;
 
 			*dest++ = byte1;
