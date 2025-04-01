@@ -28,7 +28,10 @@ static constexpr double DEFAULT_FRAMERATE = 30.0;
 struct Mode
 {
 	Mode() : Mode(0, 0, 0, true) {}
-	Mode(unsigned int w, unsigned int h, unsigned int b, bool p) : width(w), height(h), bit_depth(b), packed(p), framerate(0) {}
+	Mode(unsigned int w, unsigned int h, unsigned int b, bool p)
+		: width(w), height(h), bit_depth(b), packed(p), framerate(0)
+	{
+	}
 	Mode(std::string const &mode_string);
 	unsigned int width;
 	unsigned int height;
@@ -47,14 +50,10 @@ struct TimeVal
 
 	void set(const std::string &s)
 	{
-		static const std::map<std::string, std::chrono::nanoseconds> match
-		{
-			{ "min", std::chrono::minutes(1) },
-			{ "sec", std::chrono::seconds(1) },
-			{ "s", std::chrono::seconds(1) },
-			{ "ms", std::chrono::milliseconds(1) },
-			{ "us", std::chrono::microseconds(1) },
-			{ "ns", std::chrono::nanoseconds(1) },
+		static const std::map<std::string, std::chrono::nanoseconds> match {
+			{ "min", std::chrono::minutes(1) },		{ "sec", std::chrono::seconds(1) },
+			{ "s", std::chrono::seconds(1) },		{ "ms", std::chrono::milliseconds(1) },
+			{ "us", std::chrono::microseconds(1) }, { "ns", std::chrono::nanoseconds(1) },
 		};
 
 		try
@@ -84,10 +83,7 @@ struct TimeVal
 		return std::chrono::duration_cast<C>(value).count();
 	}
 
-	explicit constexpr operator bool() const
-	{
-		return !!value.count();
-	}
+	explicit constexpr operator bool() const { return !!value.count(); }
 
 	std::chrono::nanoseconds value;
 };
@@ -184,6 +180,7 @@ struct Options
 	bool force_dng;
 	bool force_8_bit;
 	bool force_10_bit;
+	bool force_12_bit;
 	// End Wassoc custom options
 
 	virtual bool Parse(int argc, char *argv[]);

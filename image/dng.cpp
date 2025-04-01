@@ -5,17 +5,17 @@
  * dng.cpp - Save raw image as DNG file.
  */
 
+#include <bitset>
 #include <limits>
 #include <map>
-#include <bitset>
 
 #include <libcamera/control_ids.h>
 #include <libcamera/formats.h>
 
 #include <tiffio.h>
 
-#include "core/still_options.hpp"
 #include "core/options.hpp"
+#include "core/still_options.hpp"
 #include "core/stream_info.hpp"
 
 #ifndef MAKE_STRING
@@ -38,8 +38,7 @@ struct BayerFormat
 	bool compressed;
 };
 
-static const std::map<PixelFormat, BayerFormat> bayer_formats =
-{
+static const std::map<PixelFormat, BayerFormat> bayer_formats = {
 	{ formats::SRGGB10_CSI2P, { "RGGB-10", 10, TIFF_RGGB, true, false } },
 	{ formats::SGRBG10_CSI2P, { "GRBG-10", 10, TIFF_GRBG, true, false } },
 	{ formats::SBGGR10_CSI2P, { "BGGR-10", 10, TIFF_BGGR, true, false } },
@@ -336,7 +335,7 @@ static void uncompress(uint8_t const *src, StreamInfo const &info, uint16_t *des
 		uint16_t *dp = dest + y * buf_stride_pixels;
 		uint8_t const *sp = src + y * info.stride;
 
-		for (unsigned int x = 0; x < info.width; x+=8)
+		for (unsigned int x = 0; x < info.width; x += 8)
 		{
 			if (COMPRESS_MODE & 1)
 			{
@@ -361,9 +360,7 @@ static void uncompress(uint8_t const *src, StreamInfo const &info, uint16_t *des
 
 struct Matrix
 {
-Matrix(float m0, float m1, float m2,
-	   float m3, float m4, float m5,
-	   float m6, float m7, float m8)
+	Matrix(float m0, float m1, float m2, float m3, float m4, float m5, float m6, float m7, float m8)
 	{
 		m[0] = m0, m[1] = m1, m[2] = m2;
 		m[3] = m3, m[4] = m4, m[5] = m5;
@@ -372,10 +369,7 @@ Matrix(float m0, float m1, float m2,
 	Matrix(float diag0, float diag1, float diag2) : Matrix(diag0, 0, 0, 0, diag1, 0, 0, 0, diag2) {}
 	Matrix() {}
 	float m[9];
-	Matrix T() const
-	{
-		return Matrix(m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]);
-	}
+	Matrix T() const { return Matrix(m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]); }
 	Matrix C() const
 	{
 		return Matrix(m[4] * m[8] - m[5] * m[7], -(m[3] * m[8] - m[5] * m[6]), m[3] * m[7] - m[4] * m[6],
@@ -385,8 +379,7 @@ Matrix(float m0, float m1, float m2,
 	Matrix Adj() const { return C().T(); }
 	float Det() const
 	{
-		return (m[0] * (m[4] * m[8] - m[5] * m[7]) -
-				m[1] * (m[3] * m[8] - m[5] * m[6]) +
+		return (m[0] * (m[4] * m[8] - m[5] * m[7]) - m[1] * (m[3] * m[8] - m[5] * m[6]) +
 				m[2] * (m[3] * m[7] - m[4] * m[6]));
 	}
 	Matrix Inv() const { return Adj() * (1.0 / Det()); }
@@ -408,8 +401,8 @@ Matrix(float m0, float m1, float m2,
 	}
 };
 
-void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
-			  std::string const &filename, std::string const &cam_model, Options const *options)
+void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata, std::string const &filename,
+			  std::string const &cam_model, Options const *options)
 {
 	// Check the Bayer format and unpack it to u16.
 	auto it = bayer_formats.find(info.pixel_format);
@@ -421,59 +414,86 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 	bool force8bit = options->force_8_bit;
 	bool force10bit = options->force_10_bit;
+	bool force12bit = options->force_12_bit;
 	// Decompression will require a buffer that's 8 pixels aligned.
 	unsigned int buf_stride_pixels = info.width;
 	unsigned int buf_stride_pixels_padded = (buf_stride_pixels + 7) & ~7;
 	// 1.5 for 12 bit, 1.25 for 10 bit
 	double bytesPerPixel = (double)bayer_format.bits / 8.0;
 	int bitsPerPixel = 16;
-	if(force8bit) {
+	if (force8bit)
+	{
 		bytesPerPixel = 1;
-	} else if (force10bit) {
+	}
+	else if (force10bit)
+	{
 		bytesPerPixel = 1.25;
+	}
+	else if (force12bit)
+	{
+		bytesPerPixel = 1.5;
 	}
 	std::vector<uint8_t> buf8bit(int(info.width * bytesPerPixel * info.height));
 	std::vector<uint16_t> buf16Bit(buf_stride_pixels_padded * info.height);
 	if (bayer_format.compressed)
 	{
-		uncompress((uint8_t const*)mem, info, &buf16Bit[0]);
+		uncompress((uint8_t const *)mem, info, &buf16Bit[0]);
 		buf_stride_pixels = buf_stride_pixels_padded;
+
+		cout << "is compressed, bayer_format.bits: " << bayer_format.bits << endl;
+
+		// if (force12bit && bayer_format.bits == 16) {
+		// 	bitsPerPixel = 12;
+		// }
 	}
 	else if (bayer_format.packed)
 	{
 		bitsPerPixel = bayer_format.bits;
-		if(force8bit) {
+		if (force8bit)
+		{
 			bitsPerPixel = 8;
-		} else if(force10bit) {
+		}
+		else if (force10bit)
+		{
 			bitsPerPixel = 10;
 		}
 
 		switch (bayer_format.bits)
 		{
 		case 10:
-			unpack_10bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
+			unpack_10bit((uint8_t const *)mem, info, &buf8bit[0], &buf16Bit[0]);
 			break;
 		case 12:
-			if(force8bit) {
-				unpack_12bit_to_8bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
-			} else if (force10bit) {
-				unpack_12bit_to_10bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
-			} else {
-				unpack_12bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
+			if (force8bit)
+			{
+				unpack_12bit_to_8bit((uint8_t const *)mem, info, &buf8bit[0], &buf16Bit[0]);
+			}
+			else if (force10bit)
+			{
+				unpack_12bit_to_10bit((uint8_t const *)mem, info, &buf8bit[0], &buf16Bit[0]);
+			}
+			else
+			{
+				unpack_12bit((uint8_t const *)mem, info, &buf8bit[0], &buf16Bit[0]);
 			}
 			break;
 		}
 	}
-	else {
-		unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
+	else
+	{
+		cout << "is not compressed, bayer_format.bits: " << bayer_format.bits << endl;
+		unpack_16bit((uint8_t const *)mem, info, &buf16Bit[0]);
 	}
 
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
-	if(force8bit) {
+	if (force8bit)
+	{
 		// 16 is the calculated number, but adding 12 makes it look better
 		black = 16 + 12;
-	} else if (force10bit) {
+	}
+	else if (force10bit)
+	{
 		// 64 is the calculated number, but adding 4 makes it look better
 		black = 64 + 4;
 	}
@@ -518,9 +538,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	}
 
 	// Use a slightly plausible default CCM in case the metadata doesn't have one (it should!).
-	Matrix CCM(1.90255, -0.77478, -0.12777,
-			   -0.31338, 1.88197, -0.56858,
-			   -0.06001, -0.61785, 1.67786);
+	Matrix CCM(1.90255, -0.77478, -0.12777, -0.31338, 1.88197, -0.56858, -0.06001, -0.61785, 1.67786);
 	auto ccm = metadata.get(controls::ColourCorrectionMatrix);
 	if (ccm)
 	{
@@ -530,9 +548,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		LOG_ERROR("WARNING: no CCM metadata found");
 
 	// This maxtrix from http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
-	Matrix RGB2XYZ(0.4124564, 0.3575761, 0.1804375,
-				   0.2126729, 0.7151522, 0.0721750,
-				   0.0193339, 0.1191920, 0.9503041);
+	Matrix RGB2XYZ(0.4124564, 0.3575761, 0.1804375, 0.2126729, 0.7151522, 0.0721750, 0.0193339, 0.1191920, 0.9503041);
 	Matrix CAM_XYZ = (RGB2XYZ * CCM * WB_GAINS).Inv();
 
 	LOG(2, "Black levels " << black_levels[0] << " " << black_levels[1] << " " << black_levels[2] << " "
@@ -597,8 +613,8 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 			for (unsigned int x = 0; x < (info.width >> thumbnailSizeMultiplier); x++)
 			{
 				unsigned int off = (y * buf_stride_pixels + x) << thumbnailSizeMultiplier;
-				uint32_t grey =
-					buf16Bit[off] + buf16Bit[off + 1] + buf16Bit[off + buf_stride_pixels] + buf16Bit[off + buf_stride_pixels + 1];
+				uint32_t grey = buf16Bit[off] + buf16Bit[off + 1] + buf16Bit[off + buf_stride_pixels] +
+								buf16Bit[off + buf_stride_pixels + 1];
 				grey = (grey << 14) >> bayer_format.bits;
 				grey = sqrt((double)grey); // simple "gamma correction"
 				thumb_buf[3 * x] = thumb_buf[3 * x + 1] = thumb_buf[3 * x + 2] = grey;
@@ -614,33 +630,40 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		unsigned int width = (float)info.width * options->roi_width;
 		unsigned int height = (float)info.height * options->roi_height;
 
-		if(bitsPerPixel == 10) {
+		if (bitsPerPixel == 10)
+		{
 			// 4 pixels and packed into 5 bytes so go back to the the location where
 			// the a byte holds 8 MSB of a pixel
 			startX -= startX % 4;
-		} else if (bitsPerPixel == 12) {
+		}
+		else if (bitsPerPixel == 12)
+		{
 			// 2 pixels and packed into 3 bytes so lets go back to the the location where
 			// the a byte holds 8 MSB of a pixel
 			startX -= startX % 2;
 		}
 
-		if(width == 0) {
+		if (width == 0)
+		{
 			width = info.width - startX;
 		}
 
-		if(height == 0) {
+		if (height == 0)
+		{
 			height = info.height;
 		}
 
 		unsigned int endX = startX + width;
 		unsigned int endY = startY + height;
 
-		if(endX > info.width) {
+		if (endX > info.width)
+		{
 			endX = info.width;
 			width = endX - startX;
 		}
 
-		if(endY > info.height) {
+		if (endY > info.height)
+		{
 			endY = info.height;
 			height = endY - startY;
 		}

@@ -23,8 +23,7 @@
 
 namespace fs = std::filesystem;
 
-static const std::map<int, std::string> cfa_map =
-{
+static const std::map<int, std::string> cfa_map = {
 	{ properties::draft::ColorFilterArrangementEnum::RGGB, "RGGB" },
 	{ properties::draft::ColorFilterArrangementEnum::GRBG, "GRBG" },
 	{ properties::draft::ColorFilterArrangementEnum::GBRG, "GBRG" },
@@ -32,27 +31,17 @@ static const std::map<int, std::string> cfa_map =
 	{ properties::draft::ColorFilterArrangementEnum::MONO, "MONO" },
 };
 
-static const std::map<libcamera::PixelFormat, unsigned int> bayer_formats =
-{
-	{ libcamera::formats::SRGGB10_CSI2P, 10 },
-	{ libcamera::formats::SGRBG10_CSI2P, 10 },
-	{ libcamera::formats::SBGGR10_CSI2P, 10 },
-	{ libcamera::formats::R10_CSI2P,     10 },
-	{ libcamera::formats::SGBRG10_CSI2P, 10 },
-	{ libcamera::formats::SRGGB12_CSI2P, 12 },
-	{ libcamera::formats::SGRBG12_CSI2P, 12 },
-	{ libcamera::formats::SBGGR12_CSI2P, 12 },
-	{ libcamera::formats::SGBRG12_CSI2P, 12 },
-	{ libcamera::formats::SRGGB14_CSI2P, 14 },
-	{ libcamera::formats::SGRBG14_CSI2P, 14 },
-	{ libcamera::formats::SBGGR14_CSI2P, 14 },
-	{ libcamera::formats::SGBRG14_CSI2P, 14 },
-	{ libcamera::formats::SRGGB16,       16 },
-	{ libcamera::formats::SGRBG16,       16 },
-	{ libcamera::formats::SBGGR16,       16 },
-	{ libcamera::formats::SGBRG16,       16 },
+static const std::map<libcamera::PixelFormat, unsigned int> bayer_formats = {
+	{ libcamera::formats::SRGGB10_CSI2P, 10 }, { libcamera::formats::SGRBG10_CSI2P, 10 },
+	{ libcamera::formats::SBGGR10_CSI2P, 10 }, { libcamera::formats::R10_CSI2P, 10 },
+	{ libcamera::formats::SGBRG10_CSI2P, 10 }, { libcamera::formats::SRGGB12_CSI2P, 12 },
+	{ libcamera::formats::SGRBG12_CSI2P, 12 }, { libcamera::formats::SBGGR12_CSI2P, 12 },
+	{ libcamera::formats::SGBRG12_CSI2P, 12 }, { libcamera::formats::SRGGB14_CSI2P, 14 },
+	{ libcamera::formats::SGRBG14_CSI2P, 14 }, { libcamera::formats::SBGGR14_CSI2P, 14 },
+	{ libcamera::formats::SGBRG14_CSI2P, 14 }, { libcamera::formats::SRGGB16, 16 },
+	{ libcamera::formats::SGRBG16, 16 },	   { libcamera::formats::SBGGR16, 16 },
+	{ libcamera::formats::SGBRG16, 16 },
 };
-
 
 Mode::Mode(std::string const &mode_string) : Mode()
 {
@@ -122,8 +111,8 @@ static bool set_imx708_subdev_hdr_ctrl(int en, const std::string &cam_id)
 		if (fs::exists(module_dir) && fs::is_symlink(module_dir))
 		{
 			fs::path ln = fs::read_symlink(module_dir);
-			if (ln.string().find("imx708") != std::string::npos &&
-				fs::is_symlink(id_dir) && fs::read_symlink(id_dir).string().find(cam_id) != std::string::npos)
+			if (ln.string().find("imx708") != std::string::npos && fs::is_symlink(id_dir) &&
+				fs::read_symlink(id_dir).string().find(cam_id) != std::string::npos)
 			{
 				const std::string dev_node { "/dev/v4l-subdev" + std::to_string(i) };
 				int fd = open(dev_node.c_str(), O_RDONLY, 0);
@@ -324,6 +313,8 @@ Options::Options()
 			"dng output is 8 bpp")
 		("force-10-bit", value<bool>(&force_10_bit)->default_value(false),
 			"dng output is 10 bpp")
+		("force-12-bit", value<bool>(&force_12_bit)->default_value(false),
+			"dng output is 12 bpp")
 		// End Wassoc custom options
 		;
 	// clang-format on
@@ -442,8 +433,7 @@ bool Options::Parse(int argc, char *argv[])
 		if (cameras.size() != 0)
 		{
 			unsigned int idx = 0;
-			std::cout << "Available cameras" << std::endl
-					  << "-----------------" << std::endl;
+			std::cout << "Available cameras" << std::endl << "-----------------" << std::endl;
 			for (auto const &cam : cameras)
 			{
 				cam->acquire();
@@ -490,7 +480,8 @@ bool Options::Parse(int argc, char *argv[])
 				unsigned int i = 0;
 				for (const auto &pix : formats.pixelformats())
 				{
-					if (i++) std::cout << "           ";
+					if (i++)
+						std::cout << "           ";
 					std::string mode("'" + pix.toString() + "' : ");
 					std::cout << mode;
 					unsigned int num = formats.sizes(pix).size();
@@ -516,13 +507,15 @@ bool Options::Parse(int argc, char *argv[])
 
 						auto fd_ctrl = cam->controls().find(&controls::FrameDurationLimits);
 						auto crop_ctrl = cam->controls().at(&controls::ScalerCrop).max().get<Rectangle>();
-						double fps = fd_ctrl == cam->controls().end() ? NAN : (1e6 / fd_ctrl->second.min().get<int64_t>());
-						std::cout << std::fixed << std::setprecision(2) << "["
-								  << fps << " fps - " << crop_ctrl.toString() << " crop" << "]";
+						double fps = fd_ctrl == cam->controls().end() ? NAN
+																	  : (1e6 / fd_ctrl->second.min().get<int64_t>());
+						std::cout << std::fixed << std::setprecision(2) << "[" << fps << " fps - "
+								  << crop_ctrl.toString() << " crop" << "]";
 						if (--num)
 						{
 							std::cout << std::endl;
-							for (std::size_t s = 0; s < mode.length() + 11; std::cout << " ", s++);
+							for (std::size_t s = 0; s < mode.length() + 11; std::cout << " ", s++)
+								;
 						}
 					}
 					std::cout << std::endl;
@@ -534,7 +527,8 @@ bool Options::Parse(int argc, char *argv[])
 					ss << "\n    Available controls for " << max_size.toString() << " " << max_fmt.toString()
 					   << " mode:\n    ";
 					std::cout << ss.str();
-					for (std::size_t s = 0; s < ss.str().length() - 10; std::cout << "-", s++);
+					for (std::size_t s = 0; s < ss.str().length() - 10; std::cout << "-", s++)
+						;
 					std::cout << std::endl;
 
 					std::vector<std::string> ctrls;
@@ -585,61 +579,54 @@ bool Options::Parse(int argc, char *argv[])
 	if (sscanf(afWindow.c_str(), "%f,%f,%f,%f", &afWindow_x, &afWindow_y, &afWindow_width, &afWindow_height) != 4)
 		afWindow_x = afWindow_y = afWindow_width = afWindow_height = 0; // don't set auto focus windows
 
-	std::map<std::string, int> metering_table =
-		{ { "centre", libcamera::controls::MeteringCentreWeighted },
-			{ "spot", libcamera::controls::MeteringSpot },
-			{ "average", libcamera::controls::MeteringMatrix },
-			{ "matrix", libcamera::controls::MeteringMatrix },
-			{ "custom", libcamera::controls::MeteringCustom } };
+	std::map<std::string, int> metering_table = { { "centre", libcamera::controls::MeteringCentreWeighted },
+												  { "spot", libcamera::controls::MeteringSpot },
+												  { "average", libcamera::controls::MeteringMatrix },
+												  { "matrix", libcamera::controls::MeteringMatrix },
+												  { "custom", libcamera::controls::MeteringCustom } };
 	if (metering_table.count(metering) == 0)
 		throw std::runtime_error("Invalid metering mode: " + metering);
 	metering_index = metering_table[metering];
 
-	std::map<std::string, int> exposure_table =
-		{ { "normal", libcamera::controls::ExposureNormal },
-			{ "sport", libcamera::controls::ExposureShort },
-			{ "short", libcamera::controls::ExposureShort },
-			{ "long", libcamera::controls::ExposureLong },
-			{ "custom", libcamera::controls::ExposureCustom } };
+	std::map<std::string, int> exposure_table = { { "normal", libcamera::controls::ExposureNormal },
+												  { "sport", libcamera::controls::ExposureShort },
+												  { "short", libcamera::controls::ExposureShort },
+												  { "long", libcamera::controls::ExposureLong },
+												  { "custom", libcamera::controls::ExposureCustom } };
 	if (exposure_table.count(exposure) == 0)
 		throw std::runtime_error("Invalid exposure mode:" + exposure);
 	exposure_index = exposure_table[exposure];
 
-	std::map<std::string, int> afMode_table =
-		{ { "default", -1 },
-			{ "manual", libcamera::controls::AfModeManual },
-			{ "auto", libcamera::controls::AfModeAuto },
-			{ "continuous", libcamera::controls::AfModeContinuous } };
+	std::map<std::string, int> afMode_table = { { "default", -1 },
+												{ "manual", libcamera::controls::AfModeManual },
+												{ "auto", libcamera::controls::AfModeAuto },
+												{ "continuous", libcamera::controls::AfModeContinuous } };
 	if (afMode_table.count(afMode) == 0)
 		throw std::runtime_error("Invalid AfMode:" + afMode);
 	afMode_index = afMode_table[afMode];
 
-	std::map<std::string, int> afRange_table =
-		{ { "normal", libcamera::controls::AfRangeNormal },
-			{ "macro", libcamera::controls::AfRangeMacro },
-			{ "full", libcamera::controls::AfRangeFull } };
+	std::map<std::string, int> afRange_table = { { "normal", libcamera::controls::AfRangeNormal },
+												 { "macro", libcamera::controls::AfRangeMacro },
+												 { "full", libcamera::controls::AfRangeFull } };
 	if (afRange_table.count(afRange) == 0)
 		throw std::runtime_error("Invalid AfRange mode:" + exposure);
 	afRange_index = afRange_table[afRange];
 
-
-	std::map<std::string, int> afSpeed_table =
-		{ { "normal", libcamera::controls::AfSpeedNormal },
-		    { "fast", libcamera::controls::AfSpeedFast } };
+	std::map<std::string, int> afSpeed_table = { { "normal", libcamera::controls::AfSpeedNormal },
+												 { "fast", libcamera::controls::AfSpeedFast } };
 	if (afSpeed_table.count(afSpeed) == 0)
 		throw std::runtime_error("Invalid afSpeed mode:" + afSpeed);
 	afSpeed_index = afSpeed_table[afSpeed];
 
-	std::map<std::string, int> awb_table =
-		{ { "auto", libcamera::controls::AwbAuto },
-			{ "normal", libcamera::controls::AwbAuto },
-			{ "incandescent", libcamera::controls::AwbIncandescent },
-			{ "tungsten", libcamera::controls::AwbTungsten },
-			{ "fluorescent", libcamera::controls::AwbFluorescent },
-			{ "indoor", libcamera::controls::AwbIndoor },
-			{ "daylight", libcamera::controls::AwbDaylight },
-			{ "cloudy", libcamera::controls::AwbCloudy },
-			{ "custom", libcamera::controls::AwbCustom } };
+	std::map<std::string, int> awb_table = { { "auto", libcamera::controls::AwbAuto },
+											 { "normal", libcamera::controls::AwbAuto },
+											 { "incandescent", libcamera::controls::AwbIncandescent },
+											 { "tungsten", libcamera::controls::AwbTungsten },
+											 { "fluorescent", libcamera::controls::AwbFluorescent },
+											 { "indoor", libcamera::controls::AwbIndoor },
+											 { "daylight", libcamera::controls::AwbDaylight },
+											 { "cloudy", libcamera::controls::AwbCloudy },
+											 { "custom", libcamera::controls::AwbCustom } };
 	if (awb_table.count(awb) == 0)
 		throw std::runtime_error("Invalid AWB mode: " + awb);
 	awb_index = awb_table[awb];
@@ -685,8 +672,8 @@ void Options::Print() const
 	else if (preview_width == 0 || preview_height == 0)
 		std::cerr << "    preview: default" << std::endl;
 	else
-		std::cerr << "    preview: " << preview_x << "," << preview_y << "," << preview_width << ","
-					<< preview_height << std::endl;
+		std::cerr << "    preview: " << preview_x << "," << preview_y << "," << preview_width << "," << preview_height
+				  << std::endl;
 	std::cerr << "    qt-preview: " << qt_preview << std::endl;
 	std::cerr << "    transform: " << transformToString(transform) << std::endl;
 	if (roi_width == 0 || roi_height == 0)
