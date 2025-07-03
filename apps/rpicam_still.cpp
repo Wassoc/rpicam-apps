@@ -320,7 +320,7 @@ static void event_loop(RPiCamStillApp &app)
 			if (!options->metadata.empty())
 				save_metadata(options, completed_request->metadata);
 			timelapse_frames = 0;
-			if (!options->immediate && (options->timelapse || options->signal || options->keypress))
+			if ((options->timelapse || options->signal || options->keypress))
 			{
 				if (!options->zsl)
 				{
