@@ -45,9 +45,9 @@ void FileOutput::saveFile(void *mem, size_t size, int64_t timestamp_us, uint32_t
 	// (though we have to wait for the next I frame), or if we're in "split" mode
 	// and recording is being restarted (this is necessarily an I-frame already).
 	if (fp_ == nullptr ||
-		(options_->segment && (flags & FLAG_KEYFRAME) &&
-		 timestamp_us / 1000 - file_start_time_ms_ > options_->segment) ||
-		(options_->split && (flags & FLAG_RESTART)))
+		(options_->Get().segment && (flags & FLAG_KEYFRAME) &&
+		 timestamp_us / 1000 - file_start_time_ms_ > options_->Get().segment) ||
+		(options_->Get().split && (flags & FLAG_RESTART)))
 	{
 		closeFile();
 		openFile(timestamp_us);
@@ -58,7 +58,7 @@ void FileOutput::saveFile(void *mem, size_t size, int64_t timestamp_us, uint32_t
 	{
 		if (fwrite(mem, size, 1, fp_) != 1)
 			throw std::runtime_error("failed to write output bytes");
-		if (options_->flush)
+		if (options_->Get().flush)
 			fflush(fp_);
 	}
 }
@@ -74,9 +74,9 @@ void FileOutput::saveDng(void *mem) {
 
 void FileOutput::openFile(int64_t timestamp_us)
 {
-	if (options_->output == "-")
+	if (options_->Get().output == "-")
 		fp_ = stdout;
-	else if (!options_->output.empty())
+	else if (!options_->Get().output.empty())
 	{
 		std::string filename = fileNameManager_.getNextFileName();
 		fp_ = fopen(filename.c_str(), "w");
@@ -92,7 +92,7 @@ void FileOutput::closeFile()
 {
 	if (fp_)
 	{
-		if (options_->flush)
+		if (options_->Get().flush)
 			fflush(fp_);
 		if (fp_ != stdout)
 			fclose(fp_);

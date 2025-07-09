@@ -14,29 +14,29 @@ public:
 
     std::string getNextFileName() {
         // Making a new file will increase the current directory beyond its requested size
-        if(current_directory_size_ >= options_->max_directory_size) {
+        if(current_directory_size_ >= options_->Get().max_directory_size) {
 		    makeNewCurrentDir();
 	    }
         
         char filename[256];
-        int n = snprintf(filename, sizeof(filename), options_->output.c_str(), count_);
+        int n = snprintf(filename, sizeof(filename), options_->Get().output.c_str(), count_);
         if (n < 0)
             throw std::runtime_error("failed to generate filename");
 
         // Generate the next output file name.
         // We should expect a filename to be build by the parentDir + current_directory + output file name
         std::string fileNameString(filename);
-        fs::path pathToCurrentDir = fs::path(options_->parent_directory) / current_directory_;
+        fs::path pathToCurrentDir = fs::path(options_->Get().parent_directory) / current_directory_;
         fs::path pathToFile = pathToCurrentDir / fileNameString;
 
-        if(options_->force_dng && pathToFile.extension() != DNG_EXTENSION) {
+        if(options_->Get().force_dng && pathToFile.extension() != DNG_EXTENSION) {
             pathToFile.replace_extension(DNG_EXTENSION);
         }
 
         current_directory_size_++;
         count_++;
-        if (options_->wrap)
-            count_ = count_ % options_->wrap;
+        if (options_->Get().wrap)
+            count_ = count_ % options_->Get().wrap;
 
         return pathToFile.string();
     }
@@ -54,8 +54,8 @@ private:
 
         try {
             char newDirName[256];
-            snprintf(newDirName, sizeof(newDirName), options_->output_directory.c_str(), directory_count_);
-            fs::path newOperatingDir = fs::path(options_->parent_directory) / std::string(newDirName);
+            snprintf(newDirName, sizeof(newDirName), options_->Get().output_directory.c_str(), directory_count_);
+            fs::path newOperatingDir = fs::path(options_->Get().parent_directory) / std::string(newDirName);
             // Create the directory
             if (fs::create_directory(newOperatingDir)) {
                 current_directory_size_ = 0;
@@ -86,19 +86,19 @@ private:
     }
 
     std::string getOutputDirectoryPrefix() {
-        if(options_->output_directory == "") {
+        if(options_->Get().output_directory == "") {
             return "";
         }
         // Find the position of the '%' character
-        size_t pos = options_->output_directory.find('%');
+        size_t pos = options_->Get().output_directory.find('%');
         
         // If '%' is found, return the substring up to that position
         if (pos != std::string::npos) {
-            return options_->output_directory.substr(0, pos);
+            return options_->Get().output_directory.substr(0, pos);
         }
         
         // If '%' is not found, return the whole string
-        return options_->output_directory;
+        return options_->Get().output_directory;
     }
 
     std::string getSubstringAfterPrefix(const std::string& str, const std::string& prefix) {
@@ -115,7 +115,7 @@ private:
     }
 
     void initializeCurrentOperatingDirectory() {
-        fs::path parentDir = options_->parent_directory;
+        fs::path parentDir = options_->Get().parent_directory;
         std::string outputDirPrefix = getOutputDirectoryPrefix();
         std::string outputDirWithHighestNumber = "default";
         int maxNum = 0;
@@ -126,7 +126,7 @@ private:
             for (const auto& curDir : fs::directory_iterator(parentDir)) {
                 if (fs::is_directory(curDir)) {
                     std::string dirName = curDir.path().filename().string();
-                    // Check to see if the current dir matches the prefix supplied by the options_->output_directory
+                    // Check to see if the current dir matches the prefix supplied by the options_->Get().output_directory
                     // Example. Dir%05d should match all directories with the "Dir" prefix
                     // Possible TODO: Guard against directories with similar prefixes, Dir%05d would end up matching a directory with the name "DirectoriesAreAwesome9876"
                     if (dirName.rfind(outputDirPrefix, 0) == 0) {
@@ -142,10 +142,10 @@ private:
             }
 
             // Now that we have the directory with the highest value, check to see if there is space in that dir
-            fs::path outputDirectoryPath = fs::path(options_->parent_directory) / outputDirWithHighestNumber;
+            fs::path outputDirectoryPath = fs::path(options_->Get().parent_directory) / outputDirWithHighestNumber;
             unsigned int dirSize = getDirectorySize(outputDirectoryPath);
             directory_count_ = maxNum;
-            if(dirSize < options_->max_directory_size) {
+            if(dirSize < options_->Get().max_directory_size) {
                 current_directory_ = outputDirectoryPath;
                 current_directory_size_ = dirSize;
             } else {
