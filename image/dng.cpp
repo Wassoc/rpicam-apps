@@ -419,8 +419,8 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	BayerFormat const &bayer_format = it->second;
 	LOG(1, "Bayer format is " << bayer_format.name);
 
-	bool force8bit = options->force_8_bit;
-	bool force10bit = options->force_10_bit;
+	bool force8bit = options->Get().force_8_bit;
+	bool force10bit = options->Get().force_10_bit;
 	// Decompression will require a buffer that's 8 pixels aligned.
 	unsigned int buf_stride_pixels = info.width;
 	unsigned int buf_stride_pixels_padded = (buf_stride_pixels + 7) & ~7;
@@ -609,10 +609,10 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 		TIFFWriteDirectory(tif);
 
-		unsigned int startX = (float)info.width * options->roi_x;
-		unsigned int startY = (float)info.height * options->roi_y;
-		unsigned int width = (float)info.width * options->roi_width;
-		unsigned int height = (float)info.height * options->roi_height;
+		unsigned int startX = (float)info.width * options->Get().roi_x;
+		unsigned int startY = (float)info.height * options->Get().roi_y;
+		unsigned int width = (float)info.width * options->Get().roi_width;
+		unsigned int height = (float)info.height * options->Get().roi_height;
 
 		if(bitsPerPixel == 10) {
 			// 4 pixels and packed into 5 bytes so go back to the the location where

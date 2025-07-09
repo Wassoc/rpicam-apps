@@ -32,7 +32,7 @@ FileOutput::~FileOutput()
 void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
 {
 
-	if(options_->force_dng) {
+	if(options_->Get().force_dng) {
 		saveDng(mem);
 	} else {
 		saveFile(mem, size, timestamp_us, flags);
