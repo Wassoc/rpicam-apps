@@ -312,19 +312,19 @@ Options::Options()
 			"\nSet to 10000us to cancel 50Hz flicker."
 			"\nSet to 8333us to cancel 60Hz flicker.\n")
 		// Start Wassoc custom options for rpicam-raw
-		("parent-directory", value<std::string>(&parent_directory),
+		("parent-directory", value<std::string>(&v_->parent_directory),
 			"Set the directory in which the output directory will be placed")
-		("output-directory", value<std::string>(&output_directory),
+		("output-directory", value<std::string>(&v_->output_directory),
 			"Set the directory in which to place the output file")
-		("max-directory-size", value<unsigned int>(&max_directory_size),
+		("max-directory-size", value<unsigned int>(&v_->max_directory_size),
 			"Sets the maximum directory size before creating a new one")
-		("total-frames", value<unsigned int>(&total_frames),
+		("total-frames", value<unsigned int>(&v_->total_frames),
 			"Sets the maximum number of frames saved before the process terminates")
-		("raw-as-dng", value<bool>(&force_dng)->default_value(false),
+		("raw-as-dng", value<bool>(&v_->force_dng)->default_value(false),
 			"Outputs a DNG file instead of a raw file")
-		("force-8-bit", value<bool>(&force_8_bit)->default_value(false),
+		("force-8-bit", value<bool>(&v_->force_8_bit)->default_value(false),
 			"dng output is 8 bpp")
-		("force-10-bit", value<bool>(&force_10_bit)->default_value(false),
+		("force-10-bit", value<bool>(&v_->force_10_bit)->default_value(false),
 			"dng output is 10 bpp")
 		// End Wassoc custom options
 		;
