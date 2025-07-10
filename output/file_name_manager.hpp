@@ -19,7 +19,7 @@ public:
 	    }
         
         char filename[256];
-        int n = snprintf(filename, sizeof(filename), options_->Get().output.c_str(), count_);
+        int n = snprintf(filename, sizeof(filename), options_->Get().output.c_str(), current_directory_size_);
         if (n < 0)
             throw std::runtime_error("failed to generate filename");
 
@@ -34,9 +34,6 @@ public:
         }
 
         current_directory_size_++;
-        count_++;
-        if (options_->Get().wrap)
-            count_ = count_ % options_->Get().wrap;
 
         return pathToFile.string();
     }
@@ -44,7 +41,6 @@ public:
 private:
     inline static const std::string DNG_EXTENSION = ".dng";
     Options const *options_;
-    unsigned int count_;
     unsigned int directory_count_;
     unsigned int current_directory_size_;
     fs::path current_directory_;
