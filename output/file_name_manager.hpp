@@ -19,7 +19,7 @@ public:
 	    }
         
         char filename[256];
-        int n = snprintf(filename, sizeof(filename), options_->Get().output.c_str(), current_directory_size_);
+        int n = snprintf(filename, sizeof(filename), options_->Get().output.c_str(), images_written);
         if (n < 0)
             throw std::runtime_error("failed to generate filename");
 
@@ -33,6 +33,7 @@ public:
             pathToFile.replace_extension(DNG_EXTENSION);
         }
 
+        images_written++;
         current_directory_size_++;
 
         return pathToFile.string();
@@ -43,6 +44,7 @@ private:
     Options const *options_;
     unsigned int directory_count_;
     unsigned int current_directory_size_;
+    unsigned int images_written = 0;
     fs::path current_directory_;
 
     void makeNewCurrentDir() {
