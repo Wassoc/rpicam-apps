@@ -318,7 +318,7 @@ Options::Options()
 			"Set the directory in which to place the output file")
 		("max-directory-size", value<unsigned int>(&v_->max_directory_size),
 			"Sets the maximum directory size before creating a new one")
-		("total-frames", value<unsigned int>(&v_->total_frames),
+		("total-frames", value<unsigned int>(&v_->total_frames)->default_value(0),
 			"Sets the maximum number of frames saved before the process terminates")
 		("raw-as-dng", value<bool>(&v_->force_dng)->default_value(false),
 			"Outputs a DNG file instead of a raw file")

@@ -59,7 +59,7 @@ static void event_loop(LibcameraRaw &app)
 			libcamera::StreamConfiguration const &cfg = app.RawStream()->configuration();
 			LOG(1, "Raw stream: " << cfg.size.width << "x" << cfg.size.height << " stride " << cfg.stride << " format "
 								  << cfg.pixelFormat.toString());
-		} else if (count == 20) {
+		} else if (options->Get().total_frames && count == options->Get().total_frames) {
 			app.StopCamera();
 			app.StopEncoder();
 			return;
