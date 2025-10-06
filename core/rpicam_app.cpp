@@ -797,6 +797,7 @@ void RPiCamApp::StartCamera()
 	post_processor_.Start();
 
 	camera_->requestCompleted.connect(this, &RPiCamApp::requestComplete);
+	LOG(2, "Number of requests: " << requests_.size());
 
 	for (std::unique_ptr<Request> &request : requests_)
 	{
