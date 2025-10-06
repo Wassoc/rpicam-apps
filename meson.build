@@ -35,7 +35,7 @@ endif
 
 dl_dep = dependency('dl', required : true)
 libcamera_dep = dependency('libcamera', required : true)
-libgpiod_dep = cc.find_library('gpiod', required: true)
+libgpiod_dep = cxx.find_library('gpiod', required: true)
 
 if get_option('disable_rpi_features') == true
     cpp_arguments += '-DDISABLE_RPI_FEATURES'
