@@ -8,21 +8,46 @@ public:
         if (gpio_chip == nullptr) {
             return;
         }
+        red_line = gpiod_line_open_by_offset(gpio_chip, 12);
+        green_line = gpiod_line_open_by_offset(gpio_chip, 13);
+        blue_line = gpiod_line_open_by_offset(gpio_chip, 18);
     }
     ~GpioHandler() {
+        gpiod_line_close(red_line);
+        gpiod_line_close(green_line);
+        gpiod_line_close(blue_line);
         gpiod_chip_close(gpio_chip);
         gpio_chip = nullptr;
     }
-    void setGpioHigh(int gpio) {
-        gpiod_line_set_value(gpio_chip, gpio, 1);
+
+    void setRedHigh() {
+        gpiod_line_set_value(red_line, 1);
     }
-    void setGpioLow(int gpio) {
-        gpiod_line_set_value(gpio_chip, gpio, 0);
+    void setGreenHigh() {
+        gpiod_line_set_value(green_line, 1);
+    }
+    void setBlueHigh() {
+        gpiod_line_set_value(blue_line, 1);
+    }
+    void setRedLow() {
+        gpiod_line_set_value(red_line, 0);
+    }
+    void setGreenLow() {
+        gpiod_line_set_value(green_line, 0);
+    }
+    void setBlueLow() {
+        gpiod_line_set_value(blue_line, 0);
     }
     void closeGpio() {
+        gpiod_line_close(red_line);
+        gpiod_line_close(green_line);
+        gpiod_line_close(blue_line);
         gpiod_chip_close(gpio_chip);
         gpio_chip = nullptr;
     }
 private:
     gpiod_chip* gpio_chip;
+    gpiod_line* red_line;
+    gpiod_line* green_line;
+    gpiod_line* blue_line;
 };
