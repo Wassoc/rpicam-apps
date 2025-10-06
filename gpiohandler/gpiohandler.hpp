@@ -16,11 +16,7 @@ public:
         gpiod_line_request_output(blue_line, "blue", 0);
     }
     ~GpioHandler() {
-        gpiod_line_release(red_line);
-        gpiod_line_release(green_line);
-        gpiod_line_release(blue_line);
-        gpiod_chip_close(gpio_chip);
-        gpio_chip = nullptr;
+        closeGpio();
     }
 
     void setRedHigh() {
@@ -42,6 +38,9 @@ public:
         gpiod_line_set_value(blue_line, 0);
     }
     void closeGpio() {
+        setRedLow();
+        setGreenLow();
+        setBlueLow();
         gpiod_line_release(red_line);
         gpiod_line_release(green_line);
         gpiod_line_release(blue_line);
