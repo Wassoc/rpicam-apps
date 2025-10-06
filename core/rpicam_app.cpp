@@ -797,7 +797,7 @@ void RPiCamApp::StartCamera()
 	post_processor_.Start();
 
 	camera_->requestCompleted.connect(this, &RPiCamApp::requestComplete);
-	LOG(2, "Number of requests: " << requests_.size());
+	LOG(1, "Number of requests: " << requests_.size());
 
 	for (std::unique_ptr<Request> &request : requests_)
 	{
@@ -805,7 +805,7 @@ void RPiCamApp::StartCamera()
 			throw std::runtime_error("Failed to queue request");
 	}
 
-	LOG(2, "Camera started!");
+	LOG(1, "Camera started!");
 }
 
 void RPiCamApp::StopCamera()
