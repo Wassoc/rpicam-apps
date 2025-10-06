@@ -803,6 +803,7 @@ void RPiCamApp::StartCamera()
 	{
 		if (camera_->queueRequest(request.get()) < 0)
 			throw std::runtime_error("Failed to queue request");
+		break;
 	}
 
 	LOG(1, "Camera started!");
