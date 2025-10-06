@@ -28,7 +28,7 @@ protected:
 
 // The main even loop for the application.
 
-static void event_loop(LibcameraRaw &app)
+static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 {
 	VideoOptions const *options = app.GetOptions();
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
@@ -40,7 +40,6 @@ static void event_loop(LibcameraRaw &app)
 	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
-	GpioHandler* lampHandler = new GpioHandler();
 	lampHandler->setRedHigh();
 	lampHandler->setGreenHigh();
 	lampHandler->setBlueHigh();
@@ -96,6 +95,7 @@ int main(int argc, char *argv[])
 	{
 		LibcameraRaw app;
 		VideoOptions *options = app.GetOptions();
+		GpioHandler* lampHandler = new GpioHandler();
 		if (options->Parse(argc, argv))
 		{
 			// Disable any codec (h.264/libav) based operations.
@@ -105,8 +105,9 @@ int main(int argc, char *argv[])
 			if (options->Get().verbose >= 2)
 				options->Get().Print();
 
-			event_loop(app);
+			event_loop(app, lampHandler);
 		}
+		delete lampHandler;
 	}
 	catch (std::exception const &e)
 	{
