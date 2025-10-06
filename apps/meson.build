@@ -12,7 +12,7 @@ rpicam_vid = executable('rpicam-vid', files('rpicam_vid.cpp'),
 
 rpicam_hello = executable('rpicam-hello', files('rpicam_hello.cpp'),
                           include_directories : include_directories('..'),
-                          dependencies: [libcamera_dep, libgpiod_dep]
+                          dependencies: [libcamera_dep, libgpiod_dep],
                           link_with : rpicam_app,
                           install : true)
 
