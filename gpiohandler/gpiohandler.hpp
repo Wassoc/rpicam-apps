@@ -11,6 +11,9 @@ public:
         red_line = gpiod_chip_get_line(gpio_chip, 12);
         green_line = gpiod_chip_get_line(gpio_chip, 13);
         blue_line = gpiod_chip_get_line(gpio_chip, 18);
+        gpiod_line_request_output(red_line, "red", 0);
+        gpiod_line_request_output(green_line, "green", 0);
+        gpiod_line_request_output(blue_line, "blue", 0);
     }
     ~GpioHandler() {
         gpiod_line_release(red_line);

@@ -11,7 +11,7 @@
 #include "core/stream_info.hpp"
 #include "encoder/null_encoder.hpp"
 #include "output/output.hpp"
-#include "gpiohandler/gpiohandler.h"
+#include "gpiohandler/gpiohandler.hpp"
 
 
 using namespace std::placeholders;
