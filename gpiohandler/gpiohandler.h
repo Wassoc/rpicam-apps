@@ -8,14 +8,14 @@ public:
         if (gpio_chip == nullptr) {
             return;
         }
-        red_line = gpiod_line_open_by_offset(gpio_chip, 12);
-        green_line = gpiod_line_open_by_offset(gpio_chip, 13);
-        blue_line = gpiod_line_open_by_offset(gpio_chip, 18);
+        red_line = gpiod_chip_get_line(gpio_chip, 12);
+        green_line = gpiod_chip_get_line(gpio_chip, 13);
+        blue_line = gpiod_chip_get_line(gpio_chip, 18);
     }
     ~GpioHandler() {
-        gpiod_line_close(red_line);
-        gpiod_line_close(green_line);
-        gpiod_line_close(blue_line);
+        gpiod_line_release(red_line);
+        gpiod_line_release(green_line);
+        gpiod_line_release(blue_line);
         gpiod_chip_close(gpio_chip);
         gpio_chip = nullptr;
     }
@@ -39,9 +39,9 @@ public:
         gpiod_line_set_value(blue_line, 0);
     }
     void closeGpio() {
-        gpiod_line_close(red_line);
-        gpiod_line_close(green_line);
-        gpiod_line_close(blue_line);
+        gpiod_line_release(red_line);
+        gpiod_line_release(green_line);
+        gpiod_line_release(blue_line);
         gpiod_chip_close(gpio_chip);
         gpio_chip = nullptr;
     }

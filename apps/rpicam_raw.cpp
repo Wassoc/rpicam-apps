@@ -40,10 +40,10 @@ static void event_loop(LibcameraRaw &app)
 	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
-	GpioHandler gpioHandler();
-	gpioHandler.setRedHigh();
-	gpioHandler.setGreenHigh();
-	gpioHandler.setBlueHigh();
+	GpioHandler* lampHandler = new GpioHandler();
+	lampHandler->setRedHigh();
+	lampHandler->setGreenHigh();
+	lampHandler->setBlueHigh();
 
 	// TODO: handle timelapses where the requested framerate is less than one a second
 	for (unsigned int count = 0; ; count++)
