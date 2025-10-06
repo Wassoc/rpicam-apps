@@ -11,6 +11,7 @@ public:
     }
     ~GpioHandler() {
         gpiod_chip_close(gpio_chip);
+        gpio_chip = nullptr;
     }
     void setGpioHigh(int gpio) {
         gpiod_line_set_value(gpio_chip, gpio, 1);
@@ -20,5 +21,8 @@ public:
     }
     void closeGpio() {
         gpiod_chip_close(gpio_chip);
+        gpio_chip = nullptr;
     }
+private:
+    gpiod_chip* gpio_chip;
 };
