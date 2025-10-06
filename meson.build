@@ -14,7 +14,7 @@ meson.add_dist_script('utils' / 'gen-dist.sh')
 
 fs = import('fs')
 
-cpp_arguments = ['-pedantic', '-Wno-unused-parameter', '-faligned-new', '-lgpiod']
+cpp_arguments = ['-pedantic', '-Wno-unused-parameter', '-faligned-new']
 
 # Needed for file sizes > 32-bits.
 cpp_arguments += '-D_FILE_OFFSET_BITS=64'
@@ -35,6 +35,7 @@ endif
 
 dl_dep = dependency('dl', required : true)
 libcamera_dep = dependency('libcamera', required : true)
+libgpiod_dep = cc.find_library('gpiod', required: true)
 
 if get_option('disable_rpi_features') == true
     cpp_arguments += '-DDISABLE_RPI_FEATURES'
