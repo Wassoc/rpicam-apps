@@ -11,6 +11,8 @@
 #include "core/stream_info.hpp"
 #include "encoder/null_encoder.hpp"
 #include "output/output.hpp"
+#include "gpiohandler/gpiohandler.h"
+
 
 using namespace std::placeholders;
 
@@ -38,6 +40,10 @@ static void event_loop(LibcameraRaw &app)
 	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
+	GpioHandler gpioHandler();
+	gpioHandler.setGpioHigh(12);
+	gpioHandler.setGpioHigh(13);
+	gpioHandler.setGpioHigh(18);
 
 	// TODO: handle timelapses where the requested framerate is less than one a second
 	for (unsigned int count = 0; ; count++)
