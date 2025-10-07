@@ -98,5 +98,5 @@ private:
     gpiod_line* green_line;
     gpiod_line* blue_line;
     std::vector<std::string> lamp_pattern_vec;
-    int lamp_pattern_index;
+    unsigned int lamp_pattern_index;
 };
