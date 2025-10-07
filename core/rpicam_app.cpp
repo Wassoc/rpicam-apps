@@ -607,6 +607,48 @@ void RPiCamApp::ConfigureVideo(unsigned int flags)
 	LOG(2, "Video setup complete");
 }
 
+void RPiCamApp::ConfigureRawStream()
+{
+	LOG(2, "Configuring raw stream...");
+
+	StreamRoles stream_roles = { StreamRole::Raw };
+	configuration_ = camera_->generateConfiguration(stream_roles);
+	if (!configuration_)
+		throw std::runtime_error("failed to generate raw stream configuration");
+
+	// Now we get to override any of the default settings from the options_->Get().
+	StreamConfiguration &cfg = configuration_->at(0);
+	cfg.pixelFormat = libcamera::formats::YUV420;
+	cfg.bufferCount = 6; // 6 buffers is better than 4
+	if (options_->Get().buffer_count > 0)
+		cfg.bufferCount = options_->Get().buffer_count;
+	if (options_->Get().width)
+		cfg.size.width = options_->Get().width;
+	if (options_->Get().height)
+		cfg.size.height = options_->Get().height;
+	configuration_->orientation = libcamera::Orientation::Rotate0 * options_->Get().transform;
+
+	options_->Set().mode.update(configuration_->at(0).size, options_->Get().framerate);
+	options_->Set().mode = selectMode(options_->Get().mode);
+
+	configuration_->at(0).pixelFormat = mode_to_pixel_format(options_->Get().mode);
+	configuration_->sensorConfig = libcamera::SensorConfiguration();
+	configuration_->sensorConfig->outputSize = options_->Get().mode.Size();
+	configuration_->sensorConfig->bitDepth = options_->Get().mode.bit_depth;
+	configuration_->at(0).bufferCount = configuration_->at(0).bufferCount;
+
+	configuration_->orientation = libcamera::Orientation::Rotate0 * options_->Get().transform;
+
+	configureDenoise(options_->Get().denoise == "auto" ? "cdn_fast" : options_->Get().denoise);
+	setupCapture();
+
+	streams_["raw"] = configuration_->at(0).stream();
+
+	post_processor_.Configure();
+
+	LOG(2, "Raw stream setup complete");
+}
+
 void RPiCamApp::Teardown()
 {
 	stopPreview();

@@ -68,8 +68,7 @@ void FileOutput::saveDng(void *mem) {
 	std::string filename = fileNameManager_.getNextFileName();
 	StreamInfo *info = this->getStreamInfo();
 
-	// TODO decide on camera name
-	dng_save(mem, *info, mockControlList, filename, "mock-camera-model", options_);
+	dng_save(mem, *info, mockControlList, filename, "shadowgraph-v3", options_);
 }
 
 void FileOutput::openFile(int64_t timestamp_us)

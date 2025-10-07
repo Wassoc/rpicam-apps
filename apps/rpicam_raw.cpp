@@ -36,7 +36,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
 
 	app.OpenCamera();
-	app.ConfigureVideo(LibcameraRaw::FLAG_VIDEO_RAW);
+	app.ConfigureRawStream();
 	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
