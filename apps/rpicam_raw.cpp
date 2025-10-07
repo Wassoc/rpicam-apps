@@ -40,26 +40,26 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
-	lampHandler->setRedHigh();
-	lampHandler->setGreenHigh();
-	lampHandler->setBlueHigh();
+	// lampHandler->setRedHigh();
+	// lampHandler->setGreenHigh();
+	// lampHandler->setBlueHigh();
 
 	// TODO: handle timelapses where the requested framerate is less than one a second
 	for (unsigned int count = 0; ; count++)
 	{
-		if (count % 3 == 0) {
-			lampHandler->setRedHigh();
-			lampHandler->setGreenLow();
-			lampHandler->setBlueLow();
-		} else if (count % 3 == 1) {
-			lampHandler->setRedLow();
-			lampHandler->setGreenHigh();
-			lampHandler->setBlueLow();
-		} else if (count % 3 == 2) {
-			lampHandler->setRedLow();
-			lampHandler->setGreenLow();
-			lampHandler->setBlueHigh();
-		}
+		// if (count % 3 == 0) {
+		// 	lampHandler->setRedHigh();
+		// 	lampHandler->setGreenLow();
+		// 	lampHandler->setBlueLow();
+		// } else if (count % 3 == 1) {
+		// 	lampHandler->setRedLow();
+		// 	lampHandler->setGreenHigh();
+		// 	lampHandler->setBlueLow();
+		// } else if (count % 3 == 2) {
+		// 	lampHandler->setRedLow();
+		// 	lampHandler->setGreenLow();
+		// 	lampHandler->setBlueHigh();
+		// }
 		LibcameraRaw::Msg msg = app.Wait();
 
 		if (msg.type == RPiCamApp::MsgType::Timeout)
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 	{
 		LibcameraRaw app;
 		VideoOptions *options = app.GetOptions();
-		GpioHandler* lampHandler = new GpioHandler();
+		GpioHandler* lampHandler; // = new GpioHandler();
 		if (options->Parse(argc, argv))
 		{
 			// Disable any codec (h.264/libav) based operations.
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 
 			event_loop(app, lampHandler);
 		}
-		delete lampHandler;
+		// delete lampHandler;
 	}
 	catch (std::exception const &e)
 	{
