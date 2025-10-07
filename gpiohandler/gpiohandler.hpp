@@ -39,6 +39,8 @@ public:
         if (lamp_pattern_index == lamp_pattern_vec.size()) {
             lamp_pattern_index = 0;
         }
+        LOG(1, "Vector size: " << lamp_pattern_vec.size());
+        LOG(1, "Lamp pattern index: " << lamp_pattern_index);
         std::string current_color = lamp_pattern_vec[lamp_pattern_index];
         setRedLow();
         setGreenLow();
@@ -64,9 +66,6 @@ public:
             setRedHigh();
         }
         lamp_pattern_index++;
-        if (lamp_pattern_index == lamp_pattern_vec.size()) {
-            lamp_pattern_index = 0;
-        }
     }
 
     void setRedHigh() {
