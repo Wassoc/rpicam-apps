@@ -3,7 +3,7 @@
 
 class GpioHandler {
 public:
-    GpioHandler() {
+    GpioHandler(std::string lamp_pattern = "R") {
         gpio_chip = gpiod_chip_open_by_name("gpiochip0");
         if (gpio_chip == nullptr) {
             return;
@@ -14,9 +14,54 @@ public:
         gpiod_line_request_output(red_line, "red", 0);
         gpiod_line_request_output(green_line, "green", 0);
         gpiod_line_request_output(blue_line, "blue", 0);
+        // Parse lamp_pattern into a vector of strings, delimited by ','
+        std::vector<std::string> lamp_pattern_vec;
+        size_t start = 0, end = 0;
+        while ((end = lamp_pattern.find(',', start)) != std::string::npos) {
+            lamp_pattern_vec.push_back(lamp_pattern.substr(start, end - start));
+            start = end + 1;
+        }
+        lamp_pattern_vec.push_back(lamp_pattern.substr(start));
+        lamp_pattern_index = 0;
     }
+
     ~GpioHandler() {
         closeGpio();
+    }
+
+    void setNextLampColor() {
+        bool wasColorSet = false;
+        if (lamp_pattern_index == lamp_pattern_vec.size()) {
+            lamp_pattern_index = 0;
+        }
+        std::string current_color = lamp_pattern_vec[lamp_pattern_index];
+        setRedLow();
+        setGreenLow();
+        setBlueLow();
+        for (auto letter : current_color) {
+            if (letter == 'R') {
+                setRedHigh();
+                wasColorSet = true;
+            } else if (letter == 'G') {
+                setGreenHigh();
+                wasColorSet = true;
+            } else if (letter == 'B') {
+                setBlueHigh();
+                wasColorSet = true;
+            } else if (letter == 'W') {
+                setRedHigh();
+                setGreenHigh();
+                setBlueHigh();
+                wasColorSet = true;
+            }
+        }
+        if (!wasColorSet) {
+            setRedHigh();
+        }
+        lamp_pattern_index++;
+        if (lamp_pattern_index == lamp_pattern_vec.size()) {
+            lamp_pattern_index = 0;
+        }
     }
 
     void setRedHigh() {
@@ -52,4 +97,6 @@ private:
     gpiod_line* red_line;
     gpiod_line* green_line;
     gpiod_line* blue_line;
+    std::vector<std::string> lamp_pattern_vec;
+    int lamp_pattern_index;
 };

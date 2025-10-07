@@ -259,6 +259,7 @@ struct OptsInternal
 	bool force_dng;
 	bool force_8_bit;
 	bool force_10_bit;
+	std::string lamp_pattern;
 	// End Wassoc custom options
 	
 	bool hflip_;
