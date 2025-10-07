@@ -720,6 +720,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFUnlinkDirectory(tif, 2);
 
 		TIFFClose(tif);
+		LOG(1, "DNG saved");
 	}
 	catch (std::exception const &e)
 	{
