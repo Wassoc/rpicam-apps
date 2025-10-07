@@ -326,6 +326,8 @@ Options::Options()
 			"dng output is 8 bpp")
 		("force-10-bit", value<bool>(&v_->force_10_bit)->default_value(false),
 			"dng output is 10 bpp")
+		("lamp-pattern", value<std::string>(&v_->lamp_pattern),
+			"Set the lamp pattern to use")
 		// End Wassoc custom options
 		;
 	// clang-format on
