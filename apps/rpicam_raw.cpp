@@ -47,17 +47,21 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	// TODO: handle timelapses where the requested framerate is less than one a second
 	for (unsigned int count = 0; ; count++)
 	{
-		if (count % 3 == 0) {
+		if (count % 4 == 0) {
 			lampHandler->setRedHigh();
 			lampHandler->setGreenLow();
 			lampHandler->setBlueLow();
-		} else if (count % 3 == 1) {
+		} else if (count % 4 == 1) {
 			lampHandler->setRedLow();
 			lampHandler->setGreenHigh();
 			lampHandler->setBlueLow();
-		} else if (count % 3 == 2) {
+		} else if (count % 4 == 2) {
 			lampHandler->setRedLow();
 			lampHandler->setGreenLow();
+			lampHandler->setBlueHigh();
+		} else if (count % 4 == 3) {
+			lampHandler->setRedHigh();
+			lampHandler->setGreenHigh();
 			lampHandler->setBlueHigh();
 		}
 		LibcameraRaw::Msg msg = app.Wait();
