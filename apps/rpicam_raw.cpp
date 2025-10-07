@@ -94,9 +94,9 @@ int main(int argc, char *argv[])
 	{
 		LibcameraRaw app;
 		VideoOptions *options = app.GetOptions();
-		GpioHandler* lampHandler = new GpioHandler(options->Get().lamp_pattern);
 		if (options->Parse(argc, argv))
 		{
+			GpioHandler* lampHandler = new GpioHandler(options->Get().lamp_pattern);
 			// Disable any codec (h.264/libav) based operations.
 			options->Set().codec = "yuv420";
 			options->Set().denoise = "cdn_off";
@@ -105,8 +105,8 @@ int main(int argc, char *argv[])
 				options->Get().Print();
 
 			event_loop(app, lampHandler);
+			delete lampHandler;
 		}
-		delete lampHandler;
 	}
 	catch (std::exception const &e)
 	{
