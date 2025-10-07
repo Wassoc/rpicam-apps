@@ -1114,7 +1114,11 @@ void RPiCamApp::requestComplete(Request *request)
 	}
 
 	CompletedRequest *r = new CompletedRequest(sequence_++, request);
-	CompletedRequestPtr payload(r, [this](CompletedRequest *cr) { this->queueRequest(cr); });
+	CompletedRequestPtr payload(r, 
+		[this](CompletedRequest *cr) {
+			LOG(1, "request complete, requeueing");
+			this->queueRequest(cr);
+		});
 	{
 		std::lock_guard<std::mutex> lock(completed_requests_mutex_);
 		completed_requests_.insert(r);

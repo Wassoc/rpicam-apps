@@ -411,6 +411,7 @@ Matrix(float m0, float m1, float m2,
 void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 			  std::string const &filename, std::string const &cam_model, Options const *options)
 {
+	LOG(1, "Saving DNG");
 	// Check the Bayer format and unpack it to u16.
 	auto it = bayer_formats.find(info.pixel_format);
 	// int bitsPerSample = 16;
