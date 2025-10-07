@@ -15,6 +15,7 @@ public:
         gpiod_line_request_output(green_line, "green", 0);
         gpiod_line_request_output(blue_line, "blue", 0);
         // Parse lamp_pattern into a vector of strings, delimited by ','
+        LOG(1, "Lamp pattern: " << lamp_pattern);
         std::vector<std::string> lamp_pattern_vec;
         size_t start = 0, end = 0;
         while ((end = lamp_pattern.find(',', start)) != std::string::npos) {
@@ -23,6 +24,10 @@ public:
         }
         lamp_pattern_vec.push_back(lamp_pattern.substr(start));
         lamp_pattern_index = 0;
+        LOG(1, "Lamp pattern vector: ");
+        for (auto color : lamp_pattern_vec) {
+            LOG(1, color);
+        }
     }
 
     ~GpioHandler() {
