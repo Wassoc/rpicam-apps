@@ -46,13 +46,13 @@ public:
         setBlueLow();
         for (unsigned int i = 0; i < current_color.size(); i++) {
             char letter = current_color[i];
-            LOG(1, "Letter: " << letter);
-            LOG(1, "Current color: " << current_color);
-            LOG(1, "Lamp pattern index: " << lamp_pattern_index);
-            LOG(1, "Lamp pattern vector: ");
-            for (auto color : lamp_pattern_vec) {
-                LOG(1, color);
-            }
+            // LOG(1, "Letter: " << letter);
+            // LOG(1, "Current color: " << current_color);
+            // LOG(1, "Lamp pattern index: " << lamp_pattern_index);
+            // LOG(1, "Lamp pattern vector: ");
+            // for (auto color : lamp_pattern_vec) {
+            //     LOG(1, color);
+            // }
             if (letter == 'R') {
                 setRedHigh();
                 wasColorSet = true;
