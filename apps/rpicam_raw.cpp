@@ -45,8 +45,8 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	// TODO: handle timelapses where the requested framerate is less than one a second
 	for (unsigned int count = 0; ; count++)
 	{
-		LibcameraRaw::Msg msg = app.Wait();
 		lampHandler->setNextLampColor();
+		LibcameraRaw::Msg msg = app.Wait();
 
 		if (msg.type == RPiCamApp::MsgType::Timeout)
 		{
