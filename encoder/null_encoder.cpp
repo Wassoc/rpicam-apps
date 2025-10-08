@@ -8,6 +8,9 @@
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
+#include <pthread.h>
+#include <sched.h>
 
 #include "null_encoder.hpp"
 
@@ -15,6 +18,16 @@ NullEncoder::NullEncoder(VideoOptions const *options) : Encoder(options), abort_
 {
 	LOG(2, "Opened NullEncoder");
 	output_thread_ = std::thread(&NullEncoder::outputThread, this);
+	// Set thread affinity to core 1
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(1, &cpuset); // Core 1 (zero-based index)
+
+	int returnCode = pthread_setaffinity_np(output_thread_.native_handle(),
+									sizeof(cpu_set_t), &cpuset);
+	if (returnCode != 0) {
+		LOG(1, "Error setting thread affinity: " << returnCode);
+	}
 }
 
 NullEncoder::~NullEncoder()
