@@ -49,10 +49,10 @@ public:
         LOG(1, "Color size: " << current_color.size());
         for (unsigned int i = 0; i < current_color.size(); i++) {
             char letter = current_color[i];
-            LOG(1, "Letter: " << letter);
-            LOG(1, "Current color: " << current_color);
-            LOG(1, "Lamp pattern index: " << lamp_pattern_index);
-            LOG(1, "Lamp pattern vector: ");
+            // LOG(1, "Letter: " << letter);
+            // LOG(1, "Current color: " << current_color);
+            // LOG(1, "Lamp pattern index: " << lamp_pattern_index);
+            // LOG(1, "Lamp pattern vector: ");
             for (auto color : lamp_pattern_vec) {
                 LOG(1, color);
             }
