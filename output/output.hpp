@@ -42,6 +42,7 @@ protected:
 	virtual void timestampReady(int64_t timestamp);
 	VideoOptions const *options_;
 	FILE *fp_timestamps_;
+	std::queue<libcamera::ControlList> metadata_queue_;
 
 private:
 	enum State
@@ -57,7 +58,6 @@ private:
 	std::streambuf *buf_metadata_;
 	std::ofstream of_metadata_;
 	bool metadata_started_ = false;
-	std::queue<libcamera::ControlList> metadata_queue_;
 	StreamInfo* streamInfo_ = nullptr;
 };
 
