@@ -418,8 +418,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	if (it == bayer_formats.end())
 		throw std::runtime_error("unsupported Bayer format");
 	BayerFormat const &bayer_format = it->second;
-	LOG(1, "Bayer format is " << bayer_format.name);
-
 	bool force8bit = options->Get().force_8_bit;
 	bool force10bit = options->Get().force_10_bit;
 	// Decompression will require a buffer that's 8 pixels aligned.
@@ -433,14 +431,8 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	} else if (force10bit) {
 		bytesPerPixel = 1.25;
 	}
-	LOG(1, "Bytes per pixel: " << bytesPerPixel);
-	LOG(1, "Info width: " << info.width);
-	LOG(1, "Info height: " << info.height);
-	LOG(1, "Buf stride pixels padded: " << buf_stride_pixels_padded);
-	LOG(1, "Buf stride pixels: " << buf_stride_pixels);
 	std::vector<uint8_t> buf8bit(int(info.width * bytesPerPixel * info.height));
 	std::vector<uint16_t> buf16Bit(buf_stride_pixels_padded * info.height);
-	LOG(1, "Unpacking raw image");
 	if (bayer_format.compressed)
 	{
 		uncompress((uint8_t const*)mem, info, &buf16Bit[0]);
@@ -474,7 +466,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	else {
 		unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
 	}
-	LOG(1, "Unpacking raw image done");
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
 	if(force8bit) {

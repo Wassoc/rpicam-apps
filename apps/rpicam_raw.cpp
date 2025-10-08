@@ -47,8 +47,6 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	for (unsigned int count = 0; ; count++)
 	{
 		LibcameraRaw::Msg msg = app.Wait();
-		// There is a potential issue where setting the lamp color, and writing a raw image to file can happen at the same time
-		// This is fixed by forcing the null encoder thread to run on a different core
 		lampHandler->setNextLampColor();
 
 		if (msg.type == RPiCamApp::MsgType::Timeout)

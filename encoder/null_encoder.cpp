@@ -18,9 +18,7 @@ NullEncoder::NullEncoder(VideoOptions const *options) : Encoder(options), abort_
 {
 	LOG(2, "Opened NullEncoder");
 	output_thread_ = std::thread(&NullEncoder::outputThread, this);
-	// There is a potential issue where setting the lamp color, and writing a raw image to file can happen at the same time
-	// This is fixed by forcing the null encoder thread to run on a different core
-	// Set thread affinity to core 1
+	// Appears to run faster when on a separate core
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
 	CPU_SET(1, &cpuset); // Core 1 (zero-based index)
