@@ -70,6 +70,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			app.StopCamera();
 			app.StopEncoder();
 			return;
+		} else {
+			StreamInfo info = app.GetStreamInfo(app.RawStream());
+			LOG(1, "Raw stream: " << info.width << "x" << info.height);
 		}
 
 		LOG(2, "Viewfinder frame " << count);
