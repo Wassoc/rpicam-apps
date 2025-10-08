@@ -69,6 +69,8 @@ void FileOutput::saveDng(void *mem) {
 	{
 		LOG(1, "Got metadata");
 		metadata = metadata_queue_.front();
+	} else {
+		LOG(1, "No metadata");
 	}
 	std::string filename = fileNameManager_.getNextFileName();
 	StreamInfo *info = this->getStreamInfo();
