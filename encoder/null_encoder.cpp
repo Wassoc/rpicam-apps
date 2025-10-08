@@ -57,6 +57,7 @@ void NullEncoder::outputThread()
 					return;
 			}
 		}
+		LOG(1, "Got item");
 		// Ensure the input done callback happens before the output ready callback.
 		// This is needed as the metadata queue gets pushed in the former, and popped
 		// in the latter.
