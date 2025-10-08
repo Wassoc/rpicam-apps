@@ -15,7 +15,6 @@ public:
         gpiod_line_request_output(green_line, "green", 0);
         gpiod_line_request_output(blue_line, "blue", 0);
         // Parse lamp_pattern into a vector of strings, delimited by ','
-        LOG(1, "Lamp pattern: " << lamp_pattern);
         size_t start = 0, end = 0;
         while ((end = lamp_pattern.find(',', start)) != std::string::npos) {
             lamp_pattern_vec.push_back(lamp_pattern.substr(start, end - start));
@@ -23,10 +22,6 @@ public:
         }
         lamp_pattern_vec.push_back(lamp_pattern.substr(start));
         lamp_pattern_index = 0;
-        LOG(1, "Lamp pattern vector: ");
-        for (auto color : lamp_pattern_vec) {
-            LOG(1, color);
-        }
     }
 
     ~GpioHandler() {
@@ -34,7 +29,6 @@ public:
     }
 
     void setNextLampColor() {
-        LOG(1, "Setting next lamp color");
         bool wasColorSet = false;
         bool setRed = false;
         bool setGreen = false;
@@ -42,30 +36,19 @@ public:
         if (lamp_pattern_index == lamp_pattern_vec.size()) {
             lamp_pattern_index = 0;
         }
-        // LOG(1, "Vector size: " << lamp_pattern_vec.size());
-        // LOG(1, "Lamp pattern index: " << lamp_pattern_index);
         std::string current_color = lamp_pattern_vec[lamp_pattern_index];
-        LOG(1, "Current color: " << current_color);
-        LOG(1, "Color size: " << current_color.size());
         for (unsigned int i = 0; i < current_color.size(); i++) {
             char letter = current_color[i];
-            // LOG(1, "Letter: " << letter);
-            // LOG(1, "Current color: " << current_color);
-            // LOG(1, "Lamp pattern index: " << lamp_pattern_index);
-            // LOG(1, "Lamp pattern vector: ");
-            for (auto color : lamp_pattern_vec) {
-                LOG(1, color);
-            }
-            if (letter == 'R') {
+            if (letter == 'R' || letter == 'r') {
                 setRed = true;
                 wasColorSet = true;
-            } else if (letter == 'G') {
+            } else if (letter == 'G' || letter == 'g') {
                 setGreen = true;
                 wasColorSet = true;
-            } else if (letter == 'B') {
+            } else if (letter == 'B' || letter == 'b') {
                 setBlue = true;
                 wasColorSet = true;
-            } else if (letter == 'W') {
+            } else if (letter == 'W' || letter == 'w') {
                 setRed = true;
                 setGreen = true;
                 setBlue = true;

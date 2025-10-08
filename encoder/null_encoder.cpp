@@ -18,6 +18,8 @@ NullEncoder::NullEncoder(VideoOptions const *options) : Encoder(options), abort_
 {
 	LOG(2, "Opened NullEncoder");
 	output_thread_ = std::thread(&NullEncoder::outputThread, this);
+	// There is a potential issue where setting the lamp color, and writing a raw image to file can happen at the same time
+	// This is fixed by forcing the null encoder thread to run on a different core
 	// Set thread affinity to core 1
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
@@ -53,10 +55,8 @@ void NullEncoder::outputThread()
 	OutputItem item;
 	while (true)
 	{
-		LOG(1, "***Top of output thread***");
 		{
 			std::unique_lock<std::mutex> lock(output_mutex_);
-			LOG(1, "***Got lock***");
 			while (true)
 			{
 				using namespace std::chrono_literals;
@@ -67,20 +67,16 @@ void NullEncoder::outputThread()
 					break;
 				}
 				else {
-					LOG(1, "***Waiting for item***");
 					output_cond_var_.wait_for(lock, 200ms);
 				}
 				if (abort_)
 					return;
 			}
 		}
-		LOG(1, "***Got item***");
 		// Ensure the input done callback happens before the output ready callback.
 		// This is needed as the metadata queue gets pushed in the former, and popped
 		// in the latter.
 		input_done_callback_(nullptr);
-		LOG(1, "***Done with input done callback***");
 		output_ready_callback_(item.mem, item.length, item.timestamp_us, true);
-		LOG(1, "***Done with output ready callback***");
 	}
 }

@@ -45,12 +45,10 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	// TODO: handle timelapses where the requested framerate is less than one a second
 	for (unsigned int count = 0; ; count++)
 	{
-		LOG(1, "Top of event loop");
 		LibcameraRaw::Msg msg = app.Wait();
-		
-		LOG(1, "After wait");
+		// There is a potential issue where setting the lamp color, and writing a raw image to file can happen at the same time
+		// This is fixed by forcing the null encoder thread to run on a different core
 		lampHandler->setNextLampColor();
-		LOG(1, "After set next lamp color");
 
 		if (msg.type == RPiCamApp::MsgType::Timeout)
 		{
@@ -82,7 +80,6 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			app.StopEncoder();
 			return;
 		}
-		LOG(1, "Encoding buffer");
 		if (!app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), app.RawStream()))
 		{
 			// Keep advancing our "start time" if we're still waiting to start recording (e.g.
