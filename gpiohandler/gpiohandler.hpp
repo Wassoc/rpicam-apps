@@ -34,6 +34,7 @@ public:
     }
 
     void setNextLampColor() {
+        LOG(1, "Setting next lamp color");
         bool wasColorSet = false;
         bool setRed = false;
         bool setGreen = false;
@@ -44,6 +45,8 @@ public:
         // LOG(1, "Vector size: " << lamp_pattern_vec.size());
         // LOG(1, "Lamp pattern index: " << lamp_pattern_index);
         std::string current_color = lamp_pattern_vec[lamp_pattern_index];
+        LOG(1, "Current color: " << current_color);
+        LOG(1, "Color size: " << current_color.size());
         for (unsigned int i = 0; i < current_color.size(); i++) {
             char letter = current_color[i];
             // LOG(1, "Letter: " << letter);
