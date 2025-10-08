@@ -67,5 +67,6 @@ void NullEncoder::outputThread()
 		// in the latter.
 		input_done_callback_(nullptr);
 		output_ready_callback_(item.mem, item.length, item.timestamp_us, true);
+		LOG(1, "***Done with output ready callback***");
 	}
 }
