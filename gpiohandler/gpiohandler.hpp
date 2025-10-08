@@ -44,7 +44,8 @@ public:
         setRedLow();
         setGreenLow();
         setBlueLow();
-        for (auto letter : current_color) {
+        for (unsigned int i = 0; i < current_color.size(); i++) {
+            char letter = current_color[i];
             if (letter == 'R') {
                 setRedHigh();
                 wasColorSet = true;
