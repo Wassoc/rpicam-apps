@@ -64,11 +64,15 @@ void FileOutput::saveFile(void *mem, size_t size, int64_t timestamp_us, uint32_t
 }
 
 void FileOutput::saveDng(void *mem) {
-	libcamera::ControlList mockControlList;
+	libcamera::ControlList metadata;
+	if (!options_->Get().metadata.empty())
+	{
+		metadata = metadata_queue_.front();
+	}
 	std::string filename = fileNameManager_.getNextFileName();
 	StreamInfo *info = this->getStreamInfo();
 
-	dng_save(mem, *info, mockControlList, filename, "shadowgraph-v3", options_);
+	dng_save(mem, *info, metadata, filename, "shadowgraph-v3", options_);
 }
 
 void FileOutput::openFile(int64_t timestamp_us)
