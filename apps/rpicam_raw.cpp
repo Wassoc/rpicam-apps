@@ -30,6 +30,7 @@ protected:
 
 static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 {
+	StreamInfo info;
 	VideoOptions const *options = app.GetOptions();
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
@@ -61,7 +62,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			throw std::runtime_error("unrecognised message!");
 		if (count == 0)
 		{
-			StreamInfo info = app.GetStreamInfo(app.RawStream());
+			info = app.GetStreamInfo(app.RawStream());
 			output.get()->setStreamInfo(&info);
 			libcamera::StreamConfiguration const &cfg = app.RawStream()->configuration();
 			LOG(1, "Raw stream: " << cfg.size.width << "x" << cfg.size.height << " stride " << cfg.stride << " format "
@@ -70,9 +71,6 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			app.StopCamera();
 			app.StopEncoder();
 			return;
-		} else {
-			StreamInfo info = app.GetStreamInfo(app.RawStream());
-			LOG(1, "Raw stream: " << info.width << "x" << info.height);
 		}
 
 		LOG(2, "Viewfinder frame " << count);
