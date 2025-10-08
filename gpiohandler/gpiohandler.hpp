@@ -35,15 +35,15 @@ public:
 
     void setNextLampColor() {
         bool wasColorSet = false;
+        bool setRed = false;
+        bool setGreen = false;
+        bool setBlue = false;
         if (lamp_pattern_index == lamp_pattern_vec.size()) {
             lamp_pattern_index = 0;
         }
         // LOG(1, "Vector size: " << lamp_pattern_vec.size());
         // LOG(1, "Lamp pattern index: " << lamp_pattern_index);
         std::string current_color = lamp_pattern_vec[lamp_pattern_index];
-        setRedLow();
-        setGreenLow();
-        setBlueLow();
         for (unsigned int i = 0; i < current_color.size(); i++) {
             char letter = current_color[i];
             // LOG(1, "Letter: " << letter);
@@ -54,23 +54,38 @@ public:
             //     LOG(1, color);
             // }
             if (letter == 'R') {
-                setRedHigh();
+                setRed = true;
                 wasColorSet = true;
             } else if (letter == 'G') {
-                setGreenHigh();
+                setGreen = true;
                 wasColorSet = true;
             } else if (letter == 'B') {
-                setBlueHigh();
+                setBlue = true;
                 wasColorSet = true;
             } else if (letter == 'W') {
-                setRedHigh();
-                setGreenHigh();
-                setBlueHigh();
+                setRed = true;
+                setGreen = true;
+                setBlue = true;
                 wasColorSet = true;
             }
         }
         if (!wasColorSet) {
+            setRed = true;
+        }
+        if (setRed) {
             setRedHigh();
+        } else {
+            setRedLow();
+        }
+        if (setGreen) {
+            setGreenHigh();
+        } else {
+            setGreenLow();
+        }
+        if (setBlue) {
+            setBlueHigh();
+        } else {
+            setBlueLow();
         }
         lamp_pattern_index++;
     }
