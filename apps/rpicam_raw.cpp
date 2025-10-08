@@ -48,9 +48,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 		LOG(1, "Top of event loop");
 		LibcameraRaw::Msg msg = app.Wait();
 		
-		// LOG(1, "After wait");
-		// lampHandler->setNextLampColor();
-		// LOG(1, "After set next lamp color");
+		LOG(1, "After wait");
+		lampHandler->setNextLampColor();
+		LOG(1, "After set next lamp color");
 
 		if (msg.type == RPiCamApp::MsgType::Timeout)
 		{
