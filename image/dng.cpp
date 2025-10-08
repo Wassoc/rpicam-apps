@@ -547,7 +547,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 	try
 	{
-		LOG(1, "Writing thumbnail");
 		const short cfa_repeat_pattern_dim[] = { 2, 2 };
 		uint32_t white = (1 << bayer_format.bits) - 1;
 		toff_t offset_subifd = 0, offset_exififd = 0;
@@ -664,7 +663,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
 		unsigned int rowNum = 0;
-		LOG(1, "Writing image data");
 		for (unsigned int y = startY; y < endY; y++)
 		{
 			unsigned int rowStartLocation = info.width * bytesPerPixel * y;
@@ -677,7 +675,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		// We have to checkpoint before the directory offset is valid.
 		TIFFCheckpointDirectory(tif);
 		offset_subifd = TIFFCurrentDirOffset(tif);
-		LOG(1, "Writing directory");
 		TIFFWriteDirectory(tif);
 
 		// Create a separate IFD just for the EXIF tags. Why we couldn't simply have
@@ -703,7 +700,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 		TIFFCheckpointDirectory(tif);
 		offset_exififd = TIFFCurrentDirOffset(tif);
-		LOG(1, "Writing EXIF directory");
 		TIFFWriteDirectory(tif);
 
 		// Now got back to the initial IFD and correct the offsets to its sub-thingies
@@ -721,7 +717,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFUnlinkDirectory(tif, 2);
 
 		TIFFClose(tif);
-		LOG(1, "DNG saved");
 	}
 	catch (std::exception const &e)
 	{

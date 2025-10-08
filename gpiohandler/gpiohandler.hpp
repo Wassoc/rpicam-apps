@@ -8,9 +8,9 @@ public:
         if (gpio_chip == nullptr) {
             return;
         }
-        red_line = gpiod_chip_get_line(gpio_chip, 12);
-        green_line = gpiod_chip_get_line(gpio_chip, 13);
-        blue_line = gpiod_chip_get_line(gpio_chip, 18);
+        red_line = gpiod_chip_get_line(gpio_chip, 18);
+        green_line = gpiod_chip_get_line(gpio_chip, 12);
+        blue_line = gpiod_chip_get_line(gpio_chip, 13);
         gpiod_line_request_output(red_line, "red", 0);
         gpiod_line_request_output(green_line, "green", 0);
         gpiod_line_request_output(blue_line, "blue", 0);
