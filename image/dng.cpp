@@ -433,6 +433,11 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	} else if (force10bit) {
 		bytesPerPixel = 1.25;
 	}
+	LOG(1, "Bytes per pixel: " << bytesPerPixel);
+	LOG(1, "Info width: " << info.width);
+	LOG(1, "Info height: " << info.height);
+	LOG(1, "Buf stride pixels padded: " << buf_stride_pixels_padded);
+	LOG(1, "Buf stride pixels: " << buf_stride_pixels);
 	std::vector<uint8_t> buf8bit(int(info.width * bytesPerPixel * info.height));
 	std::vector<uint16_t> buf16Bit(buf_stride_pixels_padded * info.height);
 	LOG(1, "Unpacking raw image");
