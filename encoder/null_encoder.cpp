@@ -66,6 +66,7 @@ void NullEncoder::outputThread()
 		// This is needed as the metadata queue gets pushed in the former, and popped
 		// in the latter.
 		input_done_callback_(nullptr);
+		LOG(1, "***Done with input done callback***");
 		output_ready_callback_(item.mem, item.length, item.timestamp_us, true);
 		LOG(1, "***Done with output ready callback***");
 	}
