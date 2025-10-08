@@ -51,8 +51,10 @@ void NullEncoder::outputThread()
 					output_queue_.pop();
 					break;
 				}
-				else
+				else {
+					LOG(1, "Waiting for item");
 					output_cond_var_.wait_for(lock, 200ms);
+				}
 				if (abort_)
 					return;
 			}
