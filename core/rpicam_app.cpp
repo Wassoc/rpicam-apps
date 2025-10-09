@@ -1117,6 +1117,9 @@ void RPiCamApp::makeRequests()
 				std::unique_ptr<Request> request = camera_->createRequest();
 				if (!request)
 					throw std::runtime_error("failed to make request");
+				ControlList &controls = camera_->controls();
+				controls.set(libcamera::controls::AnalogueGain, 1.0);
+				controls.set(libcamera::controls::DigitalGain, 1.0);
 				requests_.push_back(std::move(request));
 			}
 			else if (free_buffers[stream].empty())
