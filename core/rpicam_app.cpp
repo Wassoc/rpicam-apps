@@ -1052,9 +1052,9 @@ void RPiCamApp::setupCapture()
 		throw std::runtime_error("failed to configure streams");
 	LOG(2, "Camera streams configured");
 
-	LOG(2, "Available controls:");
+	LOG(1, "Available controls:");
 	for (auto const &[id, info] : camera_->controls())
-		LOG(2, "    " << id->name() << " : " << info.toString());
+		LOG(1, "    " << id->name() << " : " << info.toString());
 
 	// Next allocate all the buffers we need, mmap them and store them on a free list.
 
@@ -1117,7 +1117,7 @@ void RPiCamApp::makeRequests()
 				std::unique_ptr<Request> request = camera_->createRequest();
 				if (!request)
 					throw std::runtime_error("failed to make request");
-				ControlList &controls = camera_->controls();
+				ControlList controls = camera_->controls();
 				controls.set(libcamera::controls::AnalogueGain, 1.0);
 				controls.set(libcamera::controls::DigitalGain, 1.0);
 				requests_.push_back(std::move(request));
