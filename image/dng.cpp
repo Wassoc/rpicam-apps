@@ -700,8 +700,11 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		auto lp = metadata.get(libcamera::controls::LensPosition);
 		if (lp)
 		{
+			LOG(1, "Setting subject distance: " << *lp);
 			double dist = (*lp > 0.0) ? (1.0 / *lp) : std::numeric_limits<double>::infinity();
 			TIFFSetField(tif, EXIFTAG_SUBJECTDISTANCE, dist);
+		} else {
+			LOG(1, "No subject distance found");
 		}
 
 		TIFFCheckpointDirectory(tif);
