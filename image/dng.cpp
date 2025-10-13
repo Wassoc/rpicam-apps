@@ -589,6 +589,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_SUBIFD, 1, &offset_subifd);
 		TIFFSetField(tif, TIFFTAG_EXIFIFD, offset_exififd);
 
+		LOG(1, "creating thumbnail for width: " << info.width << " and height: " << info.height );
 		// Make a small greyscale thumbnail, just to give some clue what's in here.
 		std::vector<uint8_t> thumb_buf((info.width >> thumbnailSizeMultiplier) * 3);
 
@@ -608,6 +609,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		}
 
 		TIFFWriteDirectory(tif);
+		LOG(1, "Successfully wrote the thumbnail");
 
 		unsigned int startX = (float)info.width * options->Get().roi_x;
 		unsigned int startY = (float)info.height * options->Get().roi_y;
@@ -664,6 +666,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
+		LOG(1, "writing image data for width: " << width << " and height: " << height);
 		unsigned int rowNum = 0;
 		for (unsigned int y = startY; y < endY; y++)
 		{
@@ -673,6 +676,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 				throw std::runtime_error("error writing DNG image data");
 			rowNum++;
 		}
+		LOG(1, "Successfully wrote the image data");
 
 		// We have to checkpoint before the directory offset is valid.
 		TIFFCheckpointDirectory(tif);
