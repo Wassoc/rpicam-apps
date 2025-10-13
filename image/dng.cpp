@@ -466,6 +466,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	else {
 		unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
 	}
+	LOG(1, "Successfully unpacked the image");
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
 	if(force8bit) {
@@ -540,6 +541,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	LOG(2, CAM_XYZ.m[0] << " " << CAM_XYZ.m[1] << " " << CAM_XYZ.m[2]);
 	LOG(2, CAM_XYZ.m[3] << " " << CAM_XYZ.m[4] << " " << CAM_XYZ.m[5]);
 	LOG(2, CAM_XYZ.m[6] << " " << CAM_XYZ.m[7] << " " << CAM_XYZ.m[8]);
+	LOG(1, "Successfully extracted the metadata");
 
 	// Finally write the DNG.
 
