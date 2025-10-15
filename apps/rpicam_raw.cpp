@@ -30,6 +30,7 @@ protected:
 
 static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 {
+	unsigned int framesCaptured = 0;
 	StreamInfo info;
 	VideoOptions const *options = app.GetOptions();
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
@@ -42,6 +43,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
+	auto last_capture_time = start_time;
 
 	// TODO: handle timelapses where the requested framerate is less than one a second
 	for (unsigned int count = 0; ; count++)
@@ -65,10 +67,6 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			libcamera::StreamConfiguration const &cfg = app.RawStream()->configuration();
 			LOG(1, "Raw stream: " << cfg.size.width << "x" << cfg.size.height << " stride " << cfg.stride << " format "
 								  << cfg.pixelFormat.toString());
-		} else if (options->Get().total_frames && count == options->Get().total_frames) {
-			app.StopCamera();
-			app.StopEncoder();
-			return;
 		}
 
 		LOG(2, "Viewfinder frame " << count);
@@ -79,11 +77,24 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			app.StopEncoder();
 			return;
 		}
+		if (options->Get().capture_interval && options->Get().capture_interval.value > 0) {
+			if ((now - last_capture_time) >= options->Get().capture_interval.value) {
+				last_capture_time = now;
+			} else {
+				continue;
+			}
+		}
 		if (!app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), app.RawStream()))
 		{
 			// Keep advancing our "start time" if we're still waiting to start recording (e.g.
 			// waiting for synchronisation with another camera).
 			start_time = now;
+		}
+		framesCaptured++;
+		if (options->Get().total_frames && framesCaptured == options->Get().total_frames) {
+			app.StopCamera();
+			app.StopEncoder();
+			return;
 		}
 	}
 }

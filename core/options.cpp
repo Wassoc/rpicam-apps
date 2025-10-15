@@ -330,6 +330,8 @@ Options::Options()
 			"Set the lamp pattern to use")
 		("monochrome", value<bool>(&v_->monochrome)->default_value(false)->implicit_value(true),
 			"fixes awb, sets dng metadata to monochrome")
+		("capture-interval", value<unsigned int>(&v_->capture_interval)->default_value(0),
+			"Sets the interval between captures in seconds")
 		// End Wassoc custom options
 		;
 	// clang-format on
