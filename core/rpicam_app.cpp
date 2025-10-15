@@ -1161,7 +1161,6 @@ void RPiCamApp::requestComplete(Request *request)
 	CompletedRequest *r = new CompletedRequest(sequence_++, request);
 	CompletedRequestPtr payload(r, 
 		[this](CompletedRequest *cr) {
-			LOG(1, "request complete, requeueing");
 			this->queueRequest(cr);
 		});
 	{
