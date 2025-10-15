@@ -77,8 +77,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			app.StopEncoder();
 			return;
 		}
-		if (options->Get().capture_interval && options->Get().capture_interval.value > 0) {
-			if ((now - last_capture_time) >= options->Get().capture_interval.value) {
+		if (options->Get().capture_interval && options->Get().capture_interval > 0) {
+			unsigned int time_since_last_capture = std::chrono::duration_cast<std::chrono::seconds>(now - last_capture_time).count();
+			if (time_since_last_capture >= options->Get().capture_interval) {
 				last_capture_time = now;
 			} else {
 				continue;
