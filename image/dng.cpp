@@ -418,6 +418,12 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	if (it == bayer_formats.end())
 		throw std::runtime_error("unsupported Bayer format");
 	BayerFormat const &bayer_format = it->second;
+	if(options->Get().monochrome) {
+		bayer_format.order[0] = 0;
+		bayer_format.order[1] = 0;
+		bayer_format.order[2] = 0;
+		bayer_format.order[3] = 0;
+	}
 	bool force8bit = options->Get().force_8_bit;
 	bool force10bit = options->Get().force_10_bit;
 	// Decompression will require a buffer that's 8 pixels aligned.
@@ -548,6 +554,10 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	try
 	{
 		const short cfa_repeat_pattern_dim[] = { 2, 2 };
+		if(options->Get().monochrome) {
+			cfa_repeat_pattern_dim[0] = 1;
+			cfa_repeat_pattern_dim[1] = 1;
+		}
 		uint32_t white = (1 << bayer_format.bits) - 1;
 		toff_t offset_subifd = 0, offset_exififd = 0;
 		std::string unique_model = std::string(MAKE_STRING " ") + cam_model;
