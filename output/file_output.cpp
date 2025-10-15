@@ -67,7 +67,6 @@ void FileOutput::saveDng(void *mem) {
 	libcamera::ControlList metadata;
 	if (!options_->Get().metadata.empty())
 	{
-		LOG(1, "Got metadata");
 		metadata = metadata_queue_.front();
 	} else {
 		LOG(1, "No metadata");
