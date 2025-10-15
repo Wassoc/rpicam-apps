@@ -320,14 +320,16 @@ Options::Options()
 			"Sets the maximum directory size before creating a new one")
 		("total-frames", value<unsigned int>(&v_->total_frames)->default_value(0),
 			"Sets the maximum number of frames saved before the process terminates")
-		("raw-as-dng", value<bool>(&v_->force_dng)->default_value(false),
+		("raw-as-dng", value<bool>(&v_->force_dng)->default_value(false)->implicit_value(true),
 			"Outputs a DNG file instead of a raw file")
-		("force-8-bit", value<bool>(&v_->force_8_bit)->default_value(false),
+		("force-8-bit", value<bool>(&v_->force_8_bit)->default_value(false)->implicit_value(true),
 			"dng output is 8 bpp")
-		("force-10-bit", value<bool>(&v_->force_10_bit)->default_value(false),
+		("force-10-bit", value<bool>(&v_->force_10_bit)->default_value(false)->implicit_value(true),
 			"dng output is 10 bpp")
 		("lamp-pattern", value<std::string>(&v_->lamp_pattern),
 			"Set the lamp pattern to use")
+		("monochrome", value<bool>(&v_->monochrome)->default_value(false)->implicit_value(true),
+			"fixes awb, sets dng metadata to monochrome")
 		// End Wassoc custom options
 		;
 	// clang-format on
@@ -656,6 +658,11 @@ bool OptsInternal::Parse(boost::program_options::variables_map &vm, RPiCamApp *a
 
 	if (sscanf(awbgains.c_str(), "%f,%f", &awb_gain_r, &awb_gain_b) != 2)
 		throw std::runtime_error("Invalid AWB gains");
+	if (monochrome)
+	{
+		awb_gain_r = 1.0f;
+		awb_gain_b = 1.0f;
+	}
 
 	brightness = std::clamp(brightness, -1.0f, 1.0f);
 	contrast = std::clamp(contrast, 0.0f, 15.99f); // limits are arbitrary..
@@ -713,6 +720,7 @@ void OptsInternal::Print() const
 		std::cerr << "    flicker period: " << flicker_period.get() << "us" << std::endl;
 	std::cerr << "    ev: " << ev << std::endl;
 	std::cerr << "    awb: " << awb << std::endl;
+	std::cerr << "    monochrome: " << monochrome << std::endl;
 	if (awb_gain_r && awb_gain_b)
 		std::cerr << "    awb gains: red " << awb_gain_r << " blue " << awb_gain_b << std::endl;
 	std::cerr << "    flush: " << (flush ? "true" : "false") << std::endl;

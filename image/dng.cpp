@@ -414,8 +414,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	LOG(1, "Saving DNG: " << filename);
 	// Check the Bayer format and unpack it to u16.
 	auto it = bayer_formats.find(info.pixel_format);
-	LOG(1, "pixel format: " << info.pixel_format);
-	// LOG(1, "bayer format:" << bayer_format.name);
 	// int bitsPerSample = 16;
 	if (it == bayer_formats.end())
 		throw std::runtime_error("unsupported Bayer format");
@@ -468,7 +466,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	else {
 		unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
 	}
-	LOG(1, "Successfully unpacked the image");
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
 	if(force8bit) {
@@ -543,7 +540,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	LOG(2, CAM_XYZ.m[0] << " " << CAM_XYZ.m[1] << " " << CAM_XYZ.m[2]);
 	LOG(2, CAM_XYZ.m[3] << " " << CAM_XYZ.m[4] << " " << CAM_XYZ.m[5]);
 	LOG(2, CAM_XYZ.m[6] << " " << CAM_XYZ.m[7] << " " << CAM_XYZ.m[8]);
-	LOG(1, "Successfully extracted the metadata");
 
 	// Finally write the DNG.
 
@@ -592,7 +588,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_SUBIFD, 1, &offset_subifd);
 		TIFFSetField(tif, TIFFTAG_EXIFIFD, offset_exififd);
 
-		LOG(1, "creating thumbnail for width: " << info.width << " and height: " << info.height );
 		// Make a small greyscale thumbnail, just to give some clue what's in here.
 		std::vector<uint8_t> thumb_buf((info.width >> thumbnailSizeMultiplier) * 3);
 
@@ -612,7 +607,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		}
 
 		TIFFWriteDirectory(tif);
-		LOG(1, "Successfully wrote the thumbnail");
 
 		unsigned int startX = (float)info.width * options->Get().roi_x;
 		unsigned int startY = (float)info.height * options->Get().roi_y;
@@ -655,8 +649,11 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
 		TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
 		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerPixel);
-		// TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_CFA);
-		TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+		if(options->Get().monochrome) {
+			TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+		} else {
+			TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_CFA);
+		}
 		TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
 		TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
 		TIFFSetField(tif, TIFFTAG_CFAREPEATPATTERNDIM, cfa_repeat_pattern_dim);
@@ -670,7 +667,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_BLACKLEVELREPEATDIM, &black_level_repeat_dim);
 		TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 4, &black_levels);
 
-		LOG(1, "writing image data for width: " << width << " and height: " << height);
 		unsigned int rowNum = 0;
 		for (unsigned int y = startY; y < endY; y++)
 		{
@@ -680,7 +676,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 				throw std::runtime_error("error writing DNG image data");
 			rowNum++;
 		}
-		LOG(1, "Successfully wrote the image data");
 
 		// We have to checkpoint before the directory offset is valid.
 		TIFFCheckpointDirectory(tif);
@@ -704,11 +699,8 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		auto lp = metadata.get(libcamera::controls::LensPosition);
 		if (lp)
 		{
-			LOG(1, "Setting subject distance: " << *lp);
 			double dist = (*lp > 0.0) ? (1.0 / *lp) : std::numeric_limits<double>::infinity();
 			TIFFSetField(tif, EXIFTAG_SUBJECTDISTANCE, dist);
-		} else {
-			LOG(1, "No subject distance found");
 		}
 
 		TIFFCheckpointDirectory(tif);
@@ -730,7 +722,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFUnlinkDirectory(tif, 2);
 
 		TIFFClose(tif);
-		LOG(1, "Successfully saved the DNG file: " << filename);
 	}
 	catch (std::exception const &e)
 	{

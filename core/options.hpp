@@ -260,6 +260,7 @@ struct OptsInternal
 	bool force_8_bit;
 	bool force_10_bit;
 	std::string lamp_pattern;
+	bool monochrome;
 	// End Wassoc custom options
 	
 	bool hflip_;
