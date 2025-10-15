@@ -414,6 +414,8 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	LOG(1, "Saving DNG: " << filename);
 	// Check the Bayer format and unpack it to u16.
 	auto it = bayer_formats.find(info.pixel_format);
+	LOG(1, "pixel format: " << info.pixel_format);
+	// LOG(1, "bayer format:" << bayer_format.name);
 	// int bitsPerSample = 16;
 	if (it == bayer_formats.end())
 		throw std::runtime_error("unsupported Bayer format");
