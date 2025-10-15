@@ -418,12 +418,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	if (it == bayer_formats.end())
 		throw std::runtime_error("unsupported Bayer format");
 	BayerFormat const &bayer_format = it->second;
-	if(options->Get().monochrome) {
-		bayer_format.order[0] = 0;
-		bayer_format.order[1] = 0;
-		bayer_format.order[2] = 0;
-		bayer_format.order[3] = 0;
-	}
 	bool force8bit = options->Get().force_8_bit;
 	bool force10bit = options->Get().force_10_bit;
 	// Decompression will require a buffer that's 8 pixels aligned.
@@ -553,7 +547,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 	try
 	{
-		const short cfa_repeat_pattern_dim[] = { 2, 2 };
+		short cfa_repeat_pattern_dim[] = { 2, 2 };
 		if(options->Get().monochrome) {
 			cfa_repeat_pattern_dim[0] = 1;
 			cfa_repeat_pattern_dim[1] = 1;
@@ -668,9 +662,17 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
 		TIFFSetField(tif, TIFFTAG_CFAREPEATPATTERNDIM, cfa_repeat_pattern_dim);
 #if TIFFLIB_VERSION >= 20201219 // version 4.2.0 or later
-		TIFFSetField(tif, TIFFTAG_CFAPATTERN, 4, bayer_format.order);
+		if(options->Get().monochrome) {
+			TIFFSetField(tif, TIFFTAG_CFAPATTERN, 4, {0, 0, 0, 0});
+		} else {
+			TIFFSetField(tif, TIFFTAG_CFAPATTERN, 4, bayer_format.order);
+		}
 #else
-		TIFFSetField(tif, TIFFTAG_CFAPATTERN, bayer_format.order);
+		if(options->Get().monochrome) {
+			TIFFSetField(tif, TIFFTAG_CFAPATTERN, {0});
+		} else {
+			TIFFSetField(tif, TIFFTAG_CFAPATTERN, bayer_format.order);
+		}
 #endif
 		TIFFSetField(tif, TIFFTAG_WHITELEVEL, 1, &white);
 		const uint16_t black_level_repeat_dim[] = { 2, 2 };
