@@ -80,6 +80,26 @@ void AnnotateCvStage::Configure()
 	adjusted_thickness_ = std::max(thickness_ * info_.width / 700, 1u);
 }
 
+std::string AnnotateCvStage::placeMilliseconds(std::string text) {
+	// Replace %L in the input text with the current milliseconds.
+	std::string result;
+	size_t pos = 0, last_pos = 0;
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	int millis = ts.tv_nsec / 1000000;
+
+	while ((pos = text.find("%L", last_pos)) != std::string::npos)
+	{
+		result.append(text, last_pos, pos - last_pos);
+		char ms_buf[5];
+		snprintf(ms_buf, sizeof(ms_buf), "%03d", millis);
+		result.append(ms_buf);
+		last_pos = pos + 2;
+	}
+	result.append(text, last_pos);
+	return result;
+}
+
 bool AnnotateCvStage::Process(CompletedRequestPtr &completed_request)
 {
 	BufferWriteSync w(app_, completed_request->buffers[stream_]);
@@ -94,6 +114,7 @@ bool AnnotateCvStage::Process(CompletedRequestPtr &completed_request)
 	tm *tm_ptr = localtime(&t);
 	if (strftime(text_with_date, sizeof(text_with_date), text.c_str(), tm_ptr) != 0)
 		text = std::string(text_with_date);
+	text = placeMilliseconds(text);
 
 	uint8_t *ptr = (uint8_t *)buffer.data();
 	Mat im(info_.height, info_.width, CV_8U, ptr, info_.stride);
