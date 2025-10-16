@@ -40,6 +40,8 @@ struct BayerFormat
 
 static const std::map<PixelFormat, BayerFormat> bayer_formats =
 {
+	{ formats::SGRBG8, { "GRBG-8", 8, TIFF_GRBG, false, false } },
+
 	{ formats::SRGGB10_CSI2P, { "RGGB-10", 10, TIFF_RGGB, true, false } },
 	{ formats::SGRBG10_CSI2P, { "GRBG-10", 10, TIFF_GRBG, true, false } },
 	{ formats::SBGGR10_CSI2P, { "BGGR-10", 10, TIFF_BGGR, true, false } },
@@ -236,6 +238,19 @@ static void unpack_16bit(uint8_t const *src, StreamInfo const &info, uint16_t *d
 	}
 }
 
+static void copy_8bit(uint8_t const *src, StreamInfo const &info, uint8_t *dest, uint16_t *dest16Bit)
+{
+	unsigned int w = info.width;
+	for (unsigned int y = 0; y < info.height; y++)
+	{
+		memcpy(dest, src, w);
+		memcpy(dest16Bit, src, w);
+		dest += w;
+		dest16Bit += w;
+		src += info.stride;
+	}
+}
+
 // We always use these compression parameters.
 #define COMPRESS_OFFSET 2048
 #define COMPRESS_MODE 1
@@ -425,7 +440,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 	unsigned int buf_stride_pixels_padded = (buf_stride_pixels + 7) & ~7;
 	// 1.5 for 12 bit, 1.25 for 10 bit
 	double bytesPerPixel = (double)bayer_format.bits / 8.0;
-	int bitsPerPixel = 16;
+	int bitsPerPixel = bayer_format.bits;
 	if(force8bit) {
 		bytesPerPixel = 1;
 	} else if (force10bit) {
@@ -464,7 +479,11 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		}
 	}
 	else {
-		unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
+		if( bitsPerPixel == 8 ) {
+			copy_8bit((uint8_t const*)mem, info, &buf8bit[0], &buf16Bit[0]);
+		} else {
+			unpack_16bit((uint8_t const*)mem, info, &buf16Bit[0]);
+		}
 	}
 	// We need to fish out some metadata values for the DNG.
 	float black = 4096 * (1 << bayer_format.bits) / 65536.0;
