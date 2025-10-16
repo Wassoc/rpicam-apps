@@ -59,7 +59,6 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	for (unsigned int count = 0; ; count++)
 	{
 		LibcameraRaw::Msg msg = app.Wait();
-		lampHandler->setNextLampColor();
 
 		if (msg.type == RPiCamApp::MsgType::Timeout)
 		{
@@ -95,6 +94,8 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 				continue;
 			}
 		}
+		// Placing this after the interval check so we only update the lamp after the correct image has been captured
+		lampHandler->setNextLampColor();
 		libcamera::Stream *stream = nullptr;
 		if (options->Get().force_jpeg) {
 			stream = app.VideoStream();
