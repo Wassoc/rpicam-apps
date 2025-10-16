@@ -36,6 +36,8 @@ public:
 
 	bool Process(CompletedRequestPtr &completed_request) override;
 
+	std::string placeMilliseconds(std::string text);
+
 private:
 	Stream *stream_;
 	StreamInfo info_;
