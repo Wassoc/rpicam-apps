@@ -93,7 +93,7 @@ std::string AnnotateCvStage::placeMilliseconds(std::string text) {
 	while ((pos = text.find("%L", last_pos)) != std::string::npos)
 	{
 		result.append(text, last_pos, pos - last_pos);
-		char ms_buf[5];
+		char ms_buf[32];
 		snprintf(ms_buf, sizeof(ms_buf), "%03d", millis);
 		result.append(ms_buf);
 		last_pos = pos + 2;
