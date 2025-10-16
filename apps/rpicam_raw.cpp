@@ -10,6 +10,7 @@
 #include "core/rpicam_encoder.hpp"
 #include "core/stream_info.hpp"
 #include "encoder/null_encoder.hpp"
+#include "encoder/mjpeg_encoder.hpp"
 #include "output/output.hpp"
 #include "gpiohandler/gpiohandler.hpp"
 
@@ -20,10 +21,15 @@ class LibcameraRaw : public RPiCamEncoder
 {
 public:
 	LibcameraRaw() : RPiCamEncoder() {}
-
 protected:
 	// Force the use of "null" encoder.
-	void createEncoder() { encoder_ = std::unique_ptr<Encoder>(new NullEncoder(GetOptions())); }
+	void createEncoder() {
+		if (GetOptions()->Get().force_jpeg) {
+			encoder_ = std::unique_ptr<Encoder>(new MjpegEncoder(GetOptions()));
+		} else {
+			encoder_ = std::unique_ptr<Encoder>(new NullEncoder(GetOptions()));
+		}
+	}
 };
 
 // The main even loop for the application.
@@ -39,7 +45,11 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 
 	lampHandler->setNextLampColor();
 	app.OpenCamera();
-	app.ConfigureRawStream();
+	if (options->Get().force_jpeg) {
+		app.ConfigureVideo(RPiCamEncoder::FLAG_VIDEO_JPEG_COLOURSPACE);
+	} else {
+		app.ConfigureRawStream();
+	}
 	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
@@ -85,7 +95,13 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 				continue;
 			}
 		}
-		if (!app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), app.RawStream()))
+		libcamera::Stream *stream = nullptr;
+		if (options->Get().force_jpeg) {
+			stream = app.VideoStream();
+		} else {
+			stream = app.RawStream();
+		}
+		if (!app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), stream))
 		{
 			// Keep advancing our "start time" if we're still waiting to start recording (e.g.
 			// waiting for synchronisation with another camera).

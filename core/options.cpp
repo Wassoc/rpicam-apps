@@ -332,6 +332,8 @@ Options::Options()
 			"fixes awb, sets dng metadata to monochrome")
 		("capture-interval", value<unsigned int>(&v_->capture_interval)->default_value(0),
 			"Sets the interval between captures in seconds")
+		("force-jpeg", value<bool>(&v_->force_jpeg)->default_value(false)->implicit_value(true),
+			"Force the use of the JPEG encoder")
 		// End Wassoc custom options
 		;
 	// clang-format on

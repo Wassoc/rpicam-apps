@@ -262,6 +262,7 @@ struct OptsInternal
 	std::string lamp_pattern;
 	bool monochrome;
 	unsigned int capture_interval;
+	bool force_jpeg;
 	// End Wassoc custom options
 	
 	bool hflip_;
