@@ -54,6 +54,15 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
 	auto last_capture_time = start_time;
+	libcamera::Stream *currentStream = nullptr;
+	std::string currentStreamName = "";
+	if (options->Get().force_jpeg) {
+		currentStream = app.VideoStream();
+		currentStreamName = "JPEG";
+	} else {
+		currentStream = app.RawStream();
+		currentStreamName = "RAW";
+	}
 
 	// TODO: handle timelapses where the requested framerate is less than one a second
 	for (unsigned int count = 0; ; count++)
@@ -71,14 +80,14 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			throw std::runtime_error("unrecognised message!");
 		if (count == 0)
 		{
-			info = app.GetStreamInfo(app.RawStream());
+			info = app.GetStreamInfo(currentStream);
 			output.get()->setStreamInfo(&info);
-			libcamera::StreamConfiguration const &cfg = app.RawStream()->configuration();
-			LOG(1, "Raw stream: " << cfg.size.width << "x" << cfg.size.height << " stride " << cfg.stride << " format "
+			libcamera::StreamConfiguration const &cfg = currentStream->configuration();
+			LOG(1, currentStreamName << " stream: " << cfg.size.width << "x" << cfg.size.height << " stride " << cfg.stride << " format "
 								  << cfg.pixelFormat.toString());
 		}
 
-		LOG(2, "Viewfinder frame " << count);
+		LOG(2, currentStreamName << " frame " << count);
 		auto now = std::chrono::high_resolution_clock::now();
 		if (options->Get().timeout && (now - start_time) > options->Get().timeout.value)
 		{
@@ -96,13 +105,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 		}
 		// Placing this after the interval check so we only update the lamp after the correct image has been captured
 		lampHandler->setNextLampColor();
-		libcamera::Stream *stream = nullptr;
-		if (options->Get().force_jpeg) {
-			stream = app.VideoStream();
-		} else {
-			stream = app.RawStream();
-		}
-		if (!app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), stream))
+		if (!app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), currentStream))
 		{
 			// Keep advancing our "start time" if we're still waiting to start recording (e.g.
 			// waiting for synchronisation with another camera).
