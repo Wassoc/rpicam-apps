@@ -244,7 +244,10 @@ static void copy_8bit(uint8_t const *src, StreamInfo const &info, uint8_t *dest,
 	for (unsigned int y = 0; y < info.height; y++)
 	{
 		memcpy(dest, src, w);
-		memcpy(dest16Bit, src, w * 2);
+		for (unsigned int x = 0; x < w; x++)
+		{
+			dest16Bit[x] = src[x];
+		}
 		dest += w;
 		dest16Bit += w;
 		src += info.stride;
