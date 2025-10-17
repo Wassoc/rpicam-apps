@@ -19,7 +19,7 @@
 #include "core/stream_info.hpp"
 
 #ifndef MAKE_STRING
-#define MAKE_STRING "Raspberry Pi"
+#define MAKE_STRING "Wassoc"
 #endif
 
 using namespace libcamera;
