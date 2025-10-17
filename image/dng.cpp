@@ -590,7 +590,7 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		// Thumbnail of 144KB produces an image that is of sufficient quality without being too big
 		// If we have a 4TB SSD, then we can expect around ~200k images to be acquired, with ~29GB disk being used by thumbnails.
 		// If we assume 19MB raw images, this prevents the user from user from acquiring ~1k images
-		unsigned int thumbnailSizeMultiplier = 4;
+		unsigned int thumbnailSizeMultiplier = 3;
 		// This is just the thumbnail, but put it first to help software that only
 		// reads the first IFD.
 		TIFFSetField(tif, TIFFTAG_SUBFILETYPE, 1);
