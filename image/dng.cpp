@@ -28,6 +28,7 @@ static char TIFF_RGGB[4] = { 0, 1, 1, 2 };
 static char TIFF_GRBG[4] = { 1, 0, 2, 1 };
 static char TIFF_BGGR[4] = { 2, 1, 1, 0 };
 static char TIFF_GBRG[4] = { 1, 2, 0, 1 };
+static char TIFF_MONO[4] = { 0, 0, 0, 0 };
 
 struct BayerFormat
 {
@@ -569,7 +570,6 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 
 	try
 	{
-		static uint8_t TIFF_MONOCHROME_CFA[4] = {0, 0, 0, 0};
 		short cfa_repeat_pattern_dim[] = { 2, 2 };
 		if(options->Get().monochrome) {
 			cfa_repeat_pattern_dim[0] = 1;
@@ -686,13 +686,13 @@ void dng_save(void *mem, StreamInfo const &info, ControlList const &metadata,
 		TIFFSetField(tif, TIFFTAG_CFAREPEATPATTERNDIM, cfa_repeat_pattern_dim);
 #if TIFFLIB_VERSION >= 20201219 // version 4.2.0 or later
 		if(options->Get().monochrome) {
-			TIFFSetField(tif, TIFFTAG_CFAPATTERN, 4, TIFF_MONOCHROME_CFA);
+			TIFFSetField(tif, TIFFTAG_CFAPATTERN, 4, TIFF_MONO);
 		} else {
 			TIFFSetField(tif, TIFFTAG_CFAPATTERN, 4, bayer_format.order);
 		}
 #else
 		if(options->Get().monochrome) {
-			TIFFSetField(tif, TIFFTAG_CFAPATTERN, TIFF_MONOCHROME_CFA);
+			TIFFSetField(tif, TIFFTAG_CFAPATTERN, TIFF_MONO);
 		} else {
 			TIFFSetField(tif, TIFFTAG_CFAPATTERN, bayer_format.order);
 		}
