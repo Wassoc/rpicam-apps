@@ -24,7 +24,7 @@ public:
 protected:
 	// Force the use of "null" encoder.
 	void createEncoder() {
-		if (GetOptions()->Get().force_jpeg) {
+		if (GetOptions()->Get().force_jpeg || GetOptions()->Get().force_still) {
 			encoder_ = std::unique_ptr<Encoder>(new MjpegEncoder(GetOptions()));
 		} else {
 			encoder_ = std::unique_ptr<Encoder>(new NullEncoder(GetOptions()));
