@@ -334,6 +334,8 @@ Options::Options()
 			"Sets the interval between captures in seconds")
 		("force-jpeg", value<bool>(&v_->force_jpeg)->default_value(false)->implicit_value(true),
 			"Force the use of the JPEG encoder")
+		("force-still", value<bool>(&v_->force_still)->default_value(false)->implicit_value(true),
+			"Force the use of the still encoder")
 		// End Wassoc custom options
 		;
 	// clang-format on

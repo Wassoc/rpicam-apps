@@ -47,6 +47,8 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	app.OpenCamera();
 	if (options->Get().force_jpeg) {
 		app.ConfigureVideo(RPiCamEncoder::FLAG_VIDEO_JPEG_COLOURSPACE);
+	} else if (options->Get().force_still) {
+		app.ConfigureStill(RPiCamApp::FLAG_STILL_NONE);
 	} else {
 		app.ConfigureRawStream();
 	}
@@ -59,6 +61,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	if (options->Get().force_jpeg) {
 		currentStream = app.VideoStream();
 		currentStreamName = "JPEG";
+	} else if (options->Get().force_still) {
+		currentStream = app.StillStream();
+		currentStreamName = "STILL";
 	} else {
 		currentStream = app.RawStream();
 		currentStreamName = "RAW";

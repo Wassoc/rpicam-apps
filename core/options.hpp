@@ -263,6 +263,7 @@ struct OptsInternal
 	bool monochrome;
 	unsigned int capture_interval;
 	bool force_jpeg;
+	bool force_still;
 	// End Wassoc custom options
 	
 	bool hflip_;
