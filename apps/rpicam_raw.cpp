@@ -50,7 +50,8 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	} else if (options->Get().force_still) {
 		app.ConfigureStill(RPiCamApp::FLAG_STILL_NONE);
 	} else {
-		app.ConfigureRawStream();
+		// app.ConfigureRawStream();
+		app.ConfigureStill(RPiCamApp::FLAG_STILL_RAW);
 	}
 	app.StartEncoder();
 	app.StartCamera();
