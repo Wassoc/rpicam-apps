@@ -744,6 +744,7 @@ void RPiCamApp::StartCamera()
 		else if (!options_->Get().framerate || options_->Get().framerate.value() > 0)
 		{
 			int64_t frame_time = 1000000 / options_->Get().framerate.value_or(DEFAULT_FRAMERATE); // in us
+			LOG(1, "Setting frame duration limits to " << frame_time << " us for framerate " << options_->Get().framerate.value());
 			controls_.set(controls::FrameDurationLimits,
 						  libcamera::Span<const int64_t, 2>({ frame_time, frame_time }));
 		}
