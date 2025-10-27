@@ -12,7 +12,7 @@
 #include "encoder/null_encoder.hpp"
 #include "encoder/mjpeg_encoder.hpp"
 #include "output/output.hpp"
-#include "gpiohandler/gpiohandler.hpp"
+#include "wassoc-utils/gpiohandler.hpp"
 
 
 using namespace std::placeholders;
@@ -50,8 +50,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	} else if (options->Get().force_still) {
 		app.ConfigureStill(RPiCamApp::FLAG_STILL_NONE);
 	} else {
-		// app.ConfigureRawStream();
-		app.ConfigureStill(RPiCamApp::FLAG_STILL_RAW);
+		app.ConfigureRawStream();
 	}
 	app.StartEncoder();
 	app.StartCamera();
@@ -108,6 +107,8 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			} else {
 				continue;
 			}
+		} else if (options->Get().every_nth_frame > 1 && framesCaptured % options->Get().every_nth_frame != 0) {
+			continue;
 		}
 		// Placing this after the interval check so we only update the lamp after the correct image has been captured
 		lampHandler->setNextLampColor();

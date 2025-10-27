@@ -264,6 +264,7 @@ struct OptsInternal
 	unsigned int capture_interval;
 	bool force_jpeg;
 	bool force_still;
+	unsigned int every_nth_frame;
 	// End Wassoc custom options
 	
 	bool hflip_;

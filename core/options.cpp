@@ -336,6 +336,8 @@ Options::Options()
 			"Force the use of the JPEG encoder")
 		("force-still", value<bool>(&v_->force_still)->default_value(false)->implicit_value(true),
 			"Force the use of the still encoder")
+		("every-nth-frame", value<unsigned int>(&v_->every_nth_frame)->default_value(1),
+			"Sets the number of frames to skip between captures")
 		// End Wassoc custom options
 		;
 	// clang-format on
