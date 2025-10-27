@@ -107,7 +107,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			} else {
 				continue;
 			}
-		} else if (options->Get().every_nth_frame > 1 && framesCaptured % options->Get().every_nth_frame != 0) {
+		} else if (options->Get().every_nth_frame > 1 && count % options->Get().every_nth_frame != 0) {
 			continue;
 		}
 		// Placing this after the interval check so we only update the lamp after the correct image has been captured
