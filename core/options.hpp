@@ -265,6 +265,7 @@ struct OptsInternal
 	bool force_jpeg;
 	bool force_still;
 	unsigned int every_nth_frame;
+	bool without_lamp;
 	// End Wassoc custom options
 	
 	bool hflip_;

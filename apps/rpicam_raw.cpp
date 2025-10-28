@@ -43,7 +43,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
 
-	lampHandler->setNextLampColor();
+	if (lampHandler) {
+		lampHandler->setNextLampColor();
+	}
 	app.OpenCamera();
 	if (options->Get().force_jpeg) {
 		app.ConfigureVideo(RPiCamEncoder::FLAG_VIDEO_JPEG_COLOURSPACE);
@@ -111,7 +113,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			continue;
 		}
 		// Placing this after the interval check so we only update the lamp after the correct image has been captured
-		lampHandler->setNextLampColor();
+		if (lampHandler) {
+			lampHandler->setNextLampColor();
+		}
 		if (!app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), currentStream))
 		{
 			// Keep advancing our "start time" if we're still waiting to start recording (e.g.
@@ -135,7 +139,10 @@ int main(int argc, char *argv[])
 		VideoOptions *options = app.GetOptions();
 		if (options->Parse(argc, argv))
 		{
-			GpioHandler* lampHandler = new GpioHandler(options->Get().lamp_pattern);
+			GpioHandler* lampHandler = nullptr; // new GpioHandler(options->Get().lamp_pattern);
+			if (!options->Get().without_lamp) {
+				lampHandler = new GpioHandler(options->Get().lamp_pattern);
+			}
 			// Disable any codec (h.264/libav) based operations.
 			options->Set().codec = "yuv420";
 			options->Set().denoise = "cdn_off";
@@ -144,7 +151,9 @@ int main(int argc, char *argv[])
 				options->Get().Print();
 
 			event_loop(app, lampHandler);
-			delete lampHandler;
+			if (lampHandler) {
+				delete lampHandler;
+			}
 		}
 	}
 	catch (std::exception const &e)

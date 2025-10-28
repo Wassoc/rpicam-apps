@@ -338,6 +338,8 @@ Options::Options()
 			"Force the use of the still encoder")
 		("every-nth-frame", value<unsigned int>(&v_->every_nth_frame)->default_value(1),
 			"Sets the number of frames to skip between captures")
+		("without-lamp", value<bool>(&v_->without_lamp)->default_value(false)->implicit_value(true),
+			"Disables the lamp")
 		// End Wassoc custom options
 		;
 	// clang-format on
