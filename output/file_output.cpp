@@ -45,10 +45,10 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 
 	if(!options_->Get().metadata.empty() && !metadata_queue_.empty() && !metadataFilename.empty()) {
 		metadata = metadata_queue_.front();
-		json currentObject, metadata;
-		metadata["filename"] = getCurrentFileName();
-		metadata["metadata"] = metadata.toString();
-		currentObject[std::to_string(fileNameManager_.getImagesWritten())] = metadata;
+		json currentObject, metadataJson;
+		metadataJson["filename"] = getCurrentFileName();
+		metadataJson["metadata"] = metadata.toString();
+		currentObject[std::to_string(fileNameManager_.getImagesWritten())] = metadataJson;
 		if(isFirstFrame) {
 			std::ofstream outFile(metadataFilename);
 			if (!outFile.is_open())
