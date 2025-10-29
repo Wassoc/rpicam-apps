@@ -50,7 +50,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 		metadataJson["filename"] = getCurrentFileName();
 		for (auto const &[id, val] : metadata)
 			metadataSummary[id_map->at(id)->name()] = val.toString();
-		metadataJson["metadata"] = metadataSummary
+		metadataJson["metadata"] = metadataSummary;
 		currentObject[std::to_string(fileNameManager_.getImagesWritten())] = metadataJson;
 		if(isFirstFrame) {
 			std::ofstream outFile(metadataFilename);
