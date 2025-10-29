@@ -6,6 +6,7 @@
  */
 #include <filesystem>
 #include <string>
+#include <fstream>
 
 #include "file_output.hpp"
 #include "file_name_manager.hpp"
@@ -56,13 +57,30 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 			std::ofstream outFile(metadataFilename);
 			if (!outFile.is_open())
 				throw std::runtime_error("failed to open metadata output file " + metadataFilename);
-			outFile << currentObject.dump();
+			outFile << currentObject.dump(2);
 			outFile.close();
 		} else {
-			std::ofstream outFile(metadataFilename, std::ios::app);
+			// Read existing JSON file and merge new entry
+			json existingObject;
+			std::ifstream inFile(metadataFilename);
+			if (inFile.is_open()) {
+				try {
+					inFile >> existingObject;
+				} catch (const json::parse_error&) {
+					// If parsing fails, start with empty object
+					existingObject = json::object();
+				}
+				inFile.close();
+			}
+			// Merge the new entry into the existing object
+			for (auto& [key, value] : currentObject.items()) {
+				existingObject[key] = value;
+			}
+			// Write the complete updated JSON back to file
+			std::ofstream outFile(metadataFilename);
 			if (!outFile.is_open())
 				throw std::runtime_error("failed to open metadata output file " + metadataFilename);
-			outFile << currentObject.dump();
+			outFile << existingObject.dump(2);
 			outFile.close();
 		}
 	}
