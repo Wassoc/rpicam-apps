@@ -10,7 +10,9 @@ public:
     FileNameManager(Options const *options) {
         options_ = options;
         initializeCurrentOperatingDirectory();
+        currentFileName = "";
     }
+
 
     std::string getNextFileName() {
         // Making a new file will increase the current directory beyond its requested size
@@ -35,8 +37,16 @@ public:
 
         images_written++;
         current_directory_size_++;
+        currentFileName = pathToFile.string();
+        return currentFileName;
+    }
 
-        return pathToFile.string();
+    std::string getCurrentFileName() {
+        return currentFileName;
+    }
+
+    unsigned int getImagesWritten() {
+        return images_written;
     }
 
 private:
@@ -46,6 +56,7 @@ private:
     unsigned int current_directory_size_;
     unsigned int images_written = 0;
     fs::path current_directory_;
+    std::string currentFileName;
 
     void makeNewCurrentDir() {
         directory_count_++;

@@ -19,6 +19,9 @@ class FileOutput : public Output
 public:
 	FileOutput(VideoOptions const *options);
 	~FileOutput();
+	std::string getCurrentFileName() {
+		return fileNameManager_.getCurrentFileName();
+	}
 
 protected:
 	void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags) override;

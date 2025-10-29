@@ -15,8 +15,10 @@
 #include "core/still_options.hpp"
 #include "core/stream_info.hpp"
 #include "core/options.hpp"
+#include <nlohmann/json.hpp>
 
 namespace fs = std::filesystem;
+using json = nlohmann::json;
 
 FileOutput::FileOutput(VideoOptions const *options)
 	: Output(options), fp_(nullptr), file_start_time_ms_(0), fileNameManager_((Options*)options)
@@ -31,11 +33,35 @@ FileOutput::~FileOutput()
 
 void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
 {
-
 	if(options_->Get().force_dng) {
 		saveDng(mem);
 	} else {
 		saveFile(mem, size, timestamp_us, flags);
+	}
+
+	bool isFirstFrame = getCurrentFileName().empty();
+	std::string metadataFilename = options_->Get().output_metadata_location;
+	libcamera::ControlList metadata;
+
+	if(!options_->Get().metadata.empty() && !metadata_queue_.empty() && !metadataFilename.empty()) {
+		metadata = metadata_queue_.front();
+		json currentObject, metadata;
+		metadata["filename"] = getCurrentFileName();
+		metadata["metadata"] = metadata.toString();
+		currentObject[std::to_string(fileNameManager_.getImagesWritten())] = metadata;
+		if(isFirstFrame) {
+			std::ofstream outFile(metadataFilename);
+			if (!outFile.is_open())
+				throw std::runtime_error("failed to open metadata output file " + metadataFilename);
+			outFile << currentObject.dump();
+			outFile.close();
+		} else {
+			std::ofstream outFile(metadataFilename, std::ios::app);
+			if (!outFile.is_open())
+				throw std::runtime_error("failed to open metadata output file " + metadataFilename);
+			outFile << currentObject.dump();
+			outFile.close();
+		}
 	}
 
 }

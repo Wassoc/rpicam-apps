@@ -340,6 +340,8 @@ Options::Options()
 			"Sets the number of frames to skip between captures")
 		("without-lamp", value<bool>(&v_->without_lamp)->default_value(false)->implicit_value(true),
 			"Disables the lamp")
+		("output-metadata-location", value<std::string>(&v_->output_metadata_location)->default_value(""),
+			"Set the location of the output metadata file")
 		// End Wassoc custom options
 		;
 	// clang-format on

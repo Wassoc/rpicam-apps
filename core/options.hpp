@@ -266,6 +266,7 @@ struct OptsInternal
 	bool force_still;
 	unsigned int every_nth_frame;
 	bool without_lamp;
+	std::string output_metadata_location;
 	// End Wassoc custom options
 	
 	bool hflip_;
