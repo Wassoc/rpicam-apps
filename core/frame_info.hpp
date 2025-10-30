@@ -63,9 +63,9 @@ struct FrameInfo
 		if (afs)
 			af_state = *afs;
 
-		auto lux = ctrls.get(libcamera::controls::Lux);
-		if (lux)
-			lux = *lux;
+		auto frame_lux = ctrls.get(libcamera::controls::Lux);
+		if (frame_lux)
+			lux = *frame_lux;
 	}
 
 	std::string ToString(const std::string &info_string) const
