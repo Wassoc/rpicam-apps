@@ -50,6 +50,7 @@ if opencv_dep.found()
         'annotate_cv_stage.cpp',
         'plot_pose_cv_stage.cpp',
         'object_detect_draw_cv_stage.cpp',
+        'crosshair_stage.cpp',
     ])
 
     # OpenCV assets
