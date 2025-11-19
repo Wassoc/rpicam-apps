@@ -71,8 +71,12 @@ private:
         // Configure termios structure
         struct termios tty;
         if (tcgetattr(current_serial_fd, &tty) != 0) {
-            close(serial_fd);
-            serial_fd = -1;
+            close(current_serial_fd);
+            if (is_tx) {
+                tx_serial_fd = -1;
+            } else {
+                rx_serial_fd = -1;
+            }
             return false;
         }
         
