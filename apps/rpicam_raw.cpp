@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 		{
 			GpioHandler* lampHandler = nullptr; // new GpioHandler(options->Get().lamp_pattern);
 			if (!options->Get().without_lamp) {
-				lampHandler = new GpioHandler(options->Get().lamp_pattern);
+				lampHandler = new GpioHandler(options->Get().lamp_pattern, options->Get().r_brightness, options->Get().g_brightness, options->Get().b_brightness, options->Get().disable_illumination_trigger, options->Get().fire_and_forget);
 			}
 			// Disable any codec (h.264/libav) based operations.
 			options->Set().codec = "yuv420";

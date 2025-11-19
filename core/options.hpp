@@ -266,7 +266,12 @@ struct OptsInternal
 	bool force_still;
 	unsigned int every_nth_frame;
 	bool without_lamp;
+	bool disable_illumination_trigger;
+	unsigned int r_brightness;
+	unsigned int g_brightness;
+	unsigned int b_brightness;
 	std::string output_metadata_location;
+	bool fire_and_forget;
 	// End Wassoc custom options
 	
 	bool hflip_;

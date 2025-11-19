@@ -328,6 +328,14 @@ Options::Options()
 			"dng output is 10 bpp")
 		("lamp-pattern", value<std::string>(&v_->lamp_pattern),
 			"Set the lamp pattern to use")
+		("disable-illumination-trigger", value<bool>(&v_->disable_illumination_trigger)->default_value(false)->implicit_value(true),
+			"Disable the illumination trigger")
+		("r-brightness", value<unsigned int>(&v_->r_brightness)->default_value(100),
+			"Set the brightness of the red channel")
+		("g-brightness", value<unsigned int>(&v_->g_brightness)->default_value(100),
+			"Set the brightness of the green channel")
+		("b-brightness", value<unsigned int>(&v_->b_brightness)->default_value(100),
+			"Set the brightness of the blue channel")
 		("monochrome", value<bool>(&v_->monochrome)->default_value(false)->implicit_value(true),
 			"fixes awb, sets dng metadata to monochrome")
 		("capture-interval", value<unsigned int>(&v_->capture_interval)->default_value(0),
@@ -342,6 +350,8 @@ Options::Options()
 			"Disables the lamp")
 		("output-metadata-location", value<std::string>(&v_->output_metadata_location)->default_value(""),
 			"Set the location of the output metadata file")
+		("fire-and-forget", value<bool>(&v_->fire_and_forget)->default_value(false)->implicit_value(true),
+			"Fire and forget the lamp commands")
 		// End Wassoc custom options
 		;
 	// clang-format on
