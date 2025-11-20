@@ -250,7 +250,7 @@ private:
     }
 
 public:
-    GpioHandler(std::string lamp_pattern = "R", unsigned int r_brightness = 100, unsigned int g_brightness = 100, unsigned int b_brightness = 100, bool disable_illumination_trigger = false, bool should_fire_and_forget = false, speed_t baud_rate = B115200) {
+    GpioHandler(std::string lamp_pattern = "R", unsigned int r_brightness = 100, unsigned int g_brightness = 100, unsigned int b_brightness = 100, bool disable_illumination_trigger = false, bool should_fire_and_forget = false, speed_t baud_rate = B9600) {
         tx_serial_fd = -1;
         rx_serial_fd = -1;
         tx_serial_open = false;
