@@ -104,8 +104,12 @@ private:
         
         // Control characters
         tty.c_cc[VMIN] = 0;              // Non-blocking read
-        tty.c_cc[VTIME] = 10;            // 1 second timeout
-        
+        if (fire_and_forget) {
+            tty.c_cc[VTIME] = 0;          // No timeout
+        } else {
+            tty.c_cc[VTIME] = 10;         // 1 second timeout
+        }
+
         // Apply settings
         if (tcsetattr(current_serial_fd, TCSANOW, &tty) != 0) {
             close(current_serial_fd);
