@@ -34,7 +34,7 @@ private:
         }
         
         // Flush to ensure data is sent
-        // tcdrain(tx_serial_fd);
+        tcdrain(tx_serial_fd);
         return true;
     }
 
@@ -104,11 +104,7 @@ private:
         
         // Control characters
         tty.c_cc[VMIN] = 0;              // Non-blocking read
-        if (fire_and_forget) {
-            tty.c_cc[VTIME] = 0;          // No timeout
-        } else {
-            tty.c_cc[VTIME] = 10;         // 1 second timeout
-        }
+        tty.c_cc[VTIME] = 10;         // 1 second timeout
 
         // Apply settings
         if (tcsetattr(current_serial_fd, TCSANOW, &tty) != 0) {
