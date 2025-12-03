@@ -34,7 +34,7 @@ private:
         }
         
         // Flush to ensure data is sent
-        tcdrain(tx_serial_fd);
+        // tcdrain(tx_serial_fd);
         return true;
     }
 
