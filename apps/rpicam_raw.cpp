@@ -6,6 +6,7 @@
  */
 
 #include <chrono>
+#include <signal.h>
 
 #include "core/rpicam_encoder.hpp"
 #include "core/stream_info.hpp"
@@ -16,6 +17,15 @@
 
 
 using namespace std::placeholders;
+
+// Signal handling
+static volatile int signal_received = 0;
+
+static void signal_handler(int signal_number)
+{
+	signal_received = signal_number;
+	LOG(1, "Received signal " << signal_number);
+}
 
 class LibcameraRaw : public RPiCamEncoder
 {
@@ -74,6 +84,13 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	// TODO: handle timelapses where the requested framerate is less than one a second
 	for (unsigned int count = 0; ; count++)
 	{
+		// Check for termination signals
+		if (signal_received == SIGTERM || signal_received == SIGINT) {
+			LOG(1, "Shutting down due to signal " << signal_received);
+			app.StopCamera();
+			app.StopEncoder();
+			return;
+		}
 		LibcameraRaw::Msg msg = app.Wait();
 
 		if (msg.type == RPiCamApp::MsgType::Timeout)
@@ -139,7 +156,10 @@ int main(int argc, char *argv[])
 		VideoOptions *options = app.GetOptions();
 		if (options->Parse(argc, argv))
 		{
-			GpioHandler* lampHandler = nullptr; // new GpioHandler(options->Get().lamp_pattern);
+			// Register signal handlers for graceful shutdown
+			signal(SIGTERM, signal_handler);
+			signal(SIGINT, signal_handler);
+			GpioHandler* lampHandler = nullptr;
 			if (!options->Get().without_lamp) {
 				lampHandler = new GpioHandler(options->Get().lamp_pattern, options->Get().r_brightness, options->Get().g_brightness, options->Get().b_brightness, options->Get().disable_illumination_trigger, options->Get().fire_and_forget);
 			}
@@ -163,3 +183,4 @@ int main(int argc, char *argv[])
 	}
 	return 0;
 }
+
