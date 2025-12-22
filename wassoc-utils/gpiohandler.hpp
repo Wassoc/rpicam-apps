@@ -278,6 +278,8 @@ public:
         turnOffLamp();
         if (illumination_trigger_disabled) {
             disableIlluminationTrigger();
+        } else {
+            enableIlluminationTrigger();
         }
 
         // Parse lamp_pattern into a vector of strings, delimited by ','
