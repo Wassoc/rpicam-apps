@@ -261,7 +261,7 @@ struct OptsInternal
 	bool force_10_bit;
 	std::string lamp_pattern;
 	bool monochrome;
-	unsigned int capture_interval;
+	float capture_interval;
 	bool force_jpeg;
 	bool force_still;
 	unsigned int every_nth_frame;
