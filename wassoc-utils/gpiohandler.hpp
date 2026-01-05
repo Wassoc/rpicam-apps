@@ -334,6 +334,7 @@ public:
     void closeGpio() {
         // Turn off all colors before closing
         turnOffLamp();
+        disableIlluminationTrigger();
         
         if (tx_serial_open && tx_serial_fd >= 0) {
             close(tx_serial_fd);
