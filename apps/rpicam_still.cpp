@@ -90,7 +90,7 @@ static void save_image(RPiCamStillApp &app, CompletedRequestPtr &payload, Stream
 	else if (options->Get().encoding == "jpg")
 		jpeg_save(mem, info, payload->metadata, filename, app.CameraModel(), options);
 	else if (options->Get().encoding == "png")
-		png_save(mem, info, filename, options);
+		png_save(mem[0].data(), info, filename, options);
 	else if (options->Get().encoding == "bmp")
 		bmp_save(mem, info, filename, options);
 	else
