@@ -342,6 +342,8 @@ Options::Options()
 			"Sets the interval between captures in seconds")
 		("force-jpeg", value<bool>(&v_->force_jpeg)->default_value(false)->implicit_value(true),
 			"Force the use of the JPEG encoder")
+		("force-png", value<bool>(&v_->force_png)->default_value(false)->implicit_value(true),
+			"Force the use of the PNG encoder")
 		("force-still", value<bool>(&v_->force_still)->default_value(false)->implicit_value(true),
 			"Force the use of the still encoder")
 		("every-nth-frame", value<unsigned int>(&v_->every_nth_frame)->default_value(1),

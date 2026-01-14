@@ -264,6 +264,7 @@ struct OptsInternal
 	float capture_interval;
 	bool force_jpeg;
 	bool force_still;
+	bool force_png;
 	unsigned int every_nth_frame;
 	bool without_lamp;
 	bool disable_illumination_trigger;

@@ -18,8 +18,8 @@
 void png_save(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo const &info,
 			  std::string const &filename, StillOptions const *options)
 {
-	if (info.pixel_format != libcamera::formats::BGR888)
-		throw std::runtime_error("pixel format for png should be BGR");
+	// if (info.pixel_format != libcamera::formats::BGR888)
+	// 	throw std::runtime_error("pixel format for png should be BGR");
 
 	FILE *fp = filename == "-" ? stdout : fopen(filename.c_str(), "wb");
 	png_structp png_ptr = NULL;
@@ -43,11 +43,12 @@ void png_save(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo const
 			throw std::runtime_error("failed to set png error handling");
 
 		// Set image attributes.
-		png_set_IHDR(png_ptr, info_ptr, info.width, info.height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
-					 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+		png_set_IHDR(png_ptr, info_ptr, info.width, info.height, 8, PNG_COLOR_TYPE_GRAY, PNG_INTERLACE_NONE,
+					 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_BASE);
 		// These settings get us most of the compression, but are much faster.
-		png_set_filter(png_ptr, 0, PNG_FILTER_AVG);
-		png_set_compression_level(png_ptr, 1);
+		png_set_filter(png_ptr, PNG_FILTER_TYPE_BASE, PNG_FILTER_NONE);
+		// Passing 0 to not compress the image
+		png_set_compression_level(png_ptr, 0);
 
 		// Set up the image data.
 		png_byte **row_ptrs = (png_byte **)png_malloc(png_ptr, info.height * sizeof(png_byte *));

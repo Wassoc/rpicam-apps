@@ -36,6 +36,8 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 {
 	if(options_->Get().force_dng) {
 		saveDng(mem);
+	} else if (options_->Get().force_png) {
+		savePng(mem);
 	} else {
 		saveFile(mem, size, timestamp_us, flags);
 	}
@@ -122,6 +124,12 @@ void FileOutput::saveDng(void *mem) {
 	StreamInfo *info = this->getStreamInfo();
 
 	dng_save(mem, *info, metadata, filename, "shadowgraph-v3", options_);
+}
+
+void FileOutput::savePng(void *mem) {
+	std::string filename = fileNameManager_.getNextFileName();
+	StreamInfo *info = this->getStreamInfo();
+	png_save(mem, *info, filename, options_);
 }
 
 void FileOutput::openFile(int64_t timestamp_us)
