@@ -52,7 +52,7 @@ void png_save(void *mem, StreamInfo const &info,
 
 		// Set up the image data.
 		png_byte **row_ptrs = (png_byte **)png_malloc(png_ptr, info.height * sizeof(png_byte *));
-		png_byte *row = (uint8_t *)mem[0].data();
+		png_byte *row = (uint8_t *)mem;
 		for (unsigned int i = 0; i < info.height; i++, row += info.stride)
 			row_ptrs[i] = row;
 
