@@ -129,7 +129,7 @@ void FileOutput::saveDng(void *mem) {
 void FileOutput::savePng(void *mem) {
 	std::string filename = fileNameManager_.getNextFileName();
 	StreamInfo *info = this->getStreamInfo();
-	png_save(mem, *info, filename, options_);
+	png_save(mem, *info, filename);
 }
 
 void FileOutput::openFile(int64_t timestamp_us)

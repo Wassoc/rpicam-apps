@@ -12,11 +12,10 @@
 
 #include <png.h>
 
-#include "core/still_options.hpp"
 #include "core/stream_info.hpp"
 
 void png_save(void *mem, StreamInfo const &info,
-			  std::string const &filename, StillOptions const *options)
+			  std::string const &filename)
 {
 	// if (info.pixel_format != libcamera::formats::BGR888)
 	// 	throw std::runtime_error("pixel format for png should be BGR");

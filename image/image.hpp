@@ -34,7 +34,7 @@ void dng_save(void *mem, StreamInfo const &info,
 
 // In png.cpp:
 void png_save(void *mem, StreamInfo const &info,
-			  std::string const &filename, StillOptions const *options);
+			  std::string const &filename);
 
 // In bmp.cpp:
 void bmp_save(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo const &info,
