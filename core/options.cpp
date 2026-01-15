@@ -695,7 +695,7 @@ bool OptsInternal::Parse(boost::program_options::variables_map &vm, RPiCamApp *a
 	saturation = std::clamp(saturation, 0.0f, 15.99f); // limits are arbitrary..
 	sharpness = std::clamp(sharpness, 0.0f, 15.99f); // limits are arbitrary..
 
-	png_compression_level = std::clamp(png_compression_level, 0, 10);
+	png_compression_level = std::clamp(png_compression_level, (unsigned int)0, (unsigned int)10);
 
 	if (strcasecmp(metadata_format.c_str(), "json") == 0)
 		metadata_format = "json";
