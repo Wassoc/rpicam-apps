@@ -265,6 +265,7 @@ struct OptsInternal
 	bool force_jpeg;
 	bool force_still;
 	bool force_png;
+	unsigned int png_compression_level;
 	unsigned int every_nth_frame;
 	bool without_lamp;
 	bool disable_illumination_trigger;

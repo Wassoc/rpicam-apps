@@ -58,6 +58,7 @@ static void png_flush_memory(png_structp png_ptr)
 PngEncoder::PngEncoder(VideoOptions const *options)
 	: Encoder(options), abortEncode_(false), abortOutput_(false), index_(0)
 {
+	options_ = options;
 	output_thread_ = std::thread(&PngEncoder::outputThread, this);
 	for (int i = 0; i < NUM_ENC_THREADS; i++)
 		encode_thread_[i] = std::thread(std::bind(&PngEncoder::encodeThread, this, i));
@@ -115,7 +116,7 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		// These settings get us most of the compression, but are much faster.
 		png_set_filter(png_ptr, PNG_FILTER_TYPE_BASE, PNG_FILTER_NONE);
 		// Passing 0 to not compress the image
-		png_set_compression_level(png_ptr, 0);
+		png_set_compression_level(png_ptr, options_->Get().png_compression_level);
 
 		// Set up the image data
 		png_byte **row_ptrs = (png_byte **)png_malloc(png_ptr, item.info.height * sizeof(png_byte *));

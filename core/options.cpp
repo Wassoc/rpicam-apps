@@ -344,6 +344,8 @@ Options::Options()
 			"Force the use of the JPEG encoder")
 		("force-png", value<bool>(&v_->force_png)->default_value(false)->implicit_value(true),
 			"Force the use of the PNG encoder")
+		("png-compression-level", value<unsigned int>(&v_->png_compression_level)->default_value(6),
+			"Set the compression level of the PNG encoder")
 		("force-still", value<bool>(&v_->force_still)->default_value(false)->implicit_value(true),
 			"Force the use of the still encoder")
 		("every-nth-frame", value<unsigned int>(&v_->every_nth_frame)->default_value(1),
@@ -692,6 +694,8 @@ bool OptsInternal::Parse(boost::program_options::variables_map &vm, RPiCamApp *a
 	contrast = std::clamp(contrast, 0.0f, 15.99f); // limits are arbitrary..
 	saturation = std::clamp(saturation, 0.0f, 15.99f); // limits are arbitrary..
 	sharpness = std::clamp(sharpness, 0.0f, 15.99f); // limits are arbitrary..
+
+	png_compression_level = std::clamp(png_compression_level, 0, 10);
 
 	if (strcasecmp(metadata_format.c_str(), "json") == 0)
 		metadata_format = "json";
