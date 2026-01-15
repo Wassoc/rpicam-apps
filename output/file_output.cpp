@@ -36,8 +36,6 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 {
 	if(options_->Get().force_dng) {
 		saveDng(mem);
-	} else if (options_->Get().force_png) {
-		savePng(mem);
 	} else {
 		saveFile(mem, size, timestamp_us, flags);
 	}

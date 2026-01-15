@@ -12,6 +12,7 @@
 #include "core/stream_info.hpp"
 #include "encoder/null_encoder.hpp"
 #include "encoder/mjpeg_encoder.hpp"
+#include "encoder/png_encoder.hpp"
 #include "output/output.hpp"
 #include "wassoc-utils/gpiohandler.hpp"
 
@@ -34,7 +35,9 @@ public:
 protected:
 	// Force the use of "null" encoder.
 	void createEncoder() {
-		if (GetOptions()->Get().force_jpeg || GetOptions()->Get().force_still) {
+		if (GetOptions()->Get().force_png) {
+			encoder_ = std::unique_ptr<Encoder>(new PngEncoder(GetOptions()));
+		} else if (GetOptions()->Get().force_jpeg || GetOptions()->Get().force_still) {
 			encoder_ = std::unique_ptr<Encoder>(new MjpegEncoder(GetOptions()));
 		} else {
 			encoder_ = std::unique_ptr<Encoder>(new NullEncoder(GetOptions()));
