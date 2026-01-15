@@ -12,6 +12,7 @@
 
 #include <png.h>
 
+#include "core/still_options.hpp"
 #include "core/stream_info.hpp"
 
 void png_save(void *mem, StreamInfo const &info,
