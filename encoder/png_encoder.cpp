@@ -39,64 +39,75 @@ static void write_le32(uint8_t *buf, uint32_t value)
 // EXIF structure: "Exif\0\0" + TIFF header + IFD with exposure time tag
 static std::vector<uint8_t> BuildExifBlock(double exposure_seconds)
 {
-	std::vector<uint8_t> exif_data;
-	
-	// EXIF header: "Exif\0\0"
-	exif_data.insert(exif_data.end(), { 'E', 'x', 'i', 'f', 0, 0 });
-	
-	// TIFF header (8 bytes)
-	// Byte order: 0x4949 = Intel (little-endian)
-	exif_data.insert(exif_data.end(), { 0x49, 0x49 });
-	// TIFF version: 42
-	exif_data.insert(exif_data.end(), { 0x2A, 0x00 });
-	// Offset to first IFD: 8 (points to IFD right after header)
-	exif_data.insert(exif_data.end(), { 0x08, 0x00, 0x00, 0x00 });
-	
-	// IFD (Image File Directory)
-	// Number of directory entries: 1 (just exposure time)
-	exif_data.insert(exif_data.end(), { 0x01, 0x00 });
-	
-	// EXIF_TAG_EXPOSURE_TIME = 0x829A
-	// Tag ID (2 bytes)
-	exif_data.insert(exif_data.end(), { 0x9A, 0x82 });
-	// Type: RATIONAL (5) = 2 bytes
-	exif_data.insert(exif_data.end(), { 0x05, 0x00 });
-	// Count: 1 = 4 bytes
-	exif_data.insert(exif_data.end(), { 0x01, 0x00, 0x00, 0x00 });
-	
-	// Value/Offset: For RATIONAL, this is an offset to the actual value
-	// We'll put the value right after the IFD, so offset is current size + 4 (for next IFD offset)
-	uint32_t value_offset = exif_data.size() + 4;
-	uint8_t offset_bytes[4];
-	write_le32(offset_bytes, value_offset);
-	exif_data.insert(exif_data.end(), offset_bytes, offset_bytes + 4);
-	
-	// Next IFD offset: 0 (no more IFDs)
-	exif_data.insert(exif_data.end(), { 0x00, 0x00, 0x00, 0x00 });
-	
-	// Exposure time value (RATIONAL: numerator, denominator)
-	// Convert seconds to rational (e.g., 1/50 = 1, 50)
-	uint32_t numerator, denominator;
-	if (exposure_seconds < 1.0)
-	{
-		// For fractions, use 1/denominator format
-		denominator = (uint32_t)(1.0 / exposure_seconds + 0.5);
-		numerator = 1;
-	}
-	else
-	{
-		// For >= 1 second, use seconds/1 format
-		numerator = (uint32_t)(exposure_seconds * 1000000 + 0.5);
-		denominator = 1000000;
-	}
-	
-	uint8_t num_bytes[4], den_bytes[4];
-	write_le32(num_bytes, numerator);
-	write_le32(den_bytes, denominator);
-	exif_data.insert(exif_data.end(), num_bytes, num_bytes + 4);
-	exif_data.insert(exif_data.end(), den_bytes, den_bytes + 4);
-	
-	return exif_data;
+	std::vector<uint8_t> exif;
+
+    // EXIF header
+    exif.insert(exif.end(), { 'E','x','i','f',0,0 });
+
+    // TIFF: little-endian, version=42, offset=8
+    exif.insert(exif.end(), { 0x49,0x49, 0x2A,0x00, 0x08,0x00,0x00,0x00 });
+
+    // ---- IFD0 ----
+    // 1 entry: ExifIFDPointer (0x8769)
+    exif.insert(exif.end(), { 0x01,0x00 }); // num entries = 1
+
+    // Tag = 0x8769
+    exif.insert(exif.end(), { 0x69,0x87 });
+
+    // Type = LONG (4)
+    exif.insert(exif.end(), { 0x04,0x00 });
+
+    // Count = 1
+    exif.insert(exif.end(), { 0x01,0x00,0x00,0x00 });
+
+    // Offset to EXIF SubIFD (will be placed after IFD0)
+    uint32_t subifd_offset = 8 + 2 + 12 + 4; // TIFF header + IFD count + 1 entry + next-IFD offset
+    uint8_t tmp[4];
+    write_le32(tmp, subifd_offset);
+    exif.insert(exif.end(), tmp, tmp + 4);
+
+    // No more IFDs
+    exif.insert(exif.end(), { 0,0,0,0 });
+
+    // ---- EXIF SubIFD ----
+    // One tag: ExposureTime (0x829A)
+    exif.insert(exif.end(), { 0x01,0x00 }); // entries = 1
+
+    // Tag: ExposureTime
+    exif.insert(exif.end(), { 0x9A,0x82 });
+
+    // Type = RATIONAL (5)
+    exif.insert(exif.end(), { 0x05,0x00 });
+
+    // Count = 1
+    exif.insert(exif.end(), { 0x01,0x00,0x00,0x00 });
+
+    // Offset to rational data — after this SubIFD
+    uint32_t rational_offset = subifd_offset + 2 + 12 + 4; // entries + tag + next-IFD offset
+    write_le32(tmp, rational_offset);
+    exif.insert(exif.end(), tmp, tmp + 4);
+
+    // Next IFD = 0
+    exif.insert(exif.end(), { 0,0,0,0 });
+
+    // ---- ExposureTime rational ----
+    uint32_t num, den;
+
+    if (exposure_seconds < 1.0) {
+        den = uint32_t(1.0 / exposure_seconds + 0.5);
+        num = 1;
+    } else {
+        num = uint32_t(exposure_seconds * 1000000 + 0.5);
+        den = 1000000;
+    }
+
+    write_le32(tmp, num);
+    exif.insert(exif.end(), tmp, tmp+4);
+
+    write_le32(tmp, den);
+    exif.insert(exif.end(), tmp, tmp+4);
+
+    return exif;
 }
 
 // Structure to hold memory buffer for PNG encoding
