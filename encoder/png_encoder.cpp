@@ -9,8 +9,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
+#include <iomanip>
 
 #include <png.h>
+#include <libcamera/control_ids.h>
 
 #include "png_encoder.hpp"
 #include "core/logging.hpp"
@@ -117,6 +120,86 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		png_set_filter(png_ptr, PNG_FILTER_TYPE_BASE, PNG_FILTER_NONE);
 		// Passing 0 to not compress the image
 		png_set_compression_level(png_ptr, options_->Get().png_compression_level);
+
+		// Add metadata as PNG tEXt chunks
+		std::vector<png_text> text_chunks;
+		if (true)
+		{
+			auto exposure_time = options_->Get().shutter;
+			if (exposure_time)
+			{
+				std::ostringstream oss;
+				oss << std::fixed << std::setprecision(6) << (*exposure_time / 1000000.0) << " s";
+				png_text text;
+				text.compression = PNG_TEXT_COMPRESSION_NONE;
+				text.key = (png_charp)"ExposureTime";
+				text.text = (png_charp)oss.str().c_str();
+				text.text_length = oss.str().length();
+				text.itxt_length = 0;
+				text.lang = nullptr;
+				text.lang_key = nullptr;
+				text_chunks.push_back(text);
+			}
+			// Add shutter speed (exposure time)
+			// auto exposure_time = item.metadata.get(libcamera::controls::ExposureTime);
+			// if (exposure_time)
+			// {
+			// 	std::ostringstream oss;
+			// 	oss << std::fixed << std::setprecision(6) << (*exposure_time / 1000000.0) << " s";
+			// 	item.metadata_strings.push_back(oss.str());
+			// 	png_text text;
+			// 	text.compression = PNG_TEXT_COMPRESSION_NONE;
+			// 	text.key = (png_charp)"ExposureTime";
+			// 	text.text = (png_charp)item.metadata_strings.back().c_str();
+			// 	text.text_length = item.metadata_strings.back().length();
+			// 	text.itxt_length = 0;
+			// 	text.lang = nullptr;
+			// 	text.lang_key = nullptr;
+			// 	text_chunks.push_back(text);
+			// }
+
+			// // Add analogue gain
+			// auto ag = item.metadata.get(libcamera::controls::AnalogueGain);
+			// if (ag)
+			// {
+			// 	std::ostringstream oss;
+			// 	oss << std::fixed << std::setprecision(2) << *ag;
+			// 	item.metadata_strings.push_back(oss.str());
+			// 	png_text text;
+			// 	text.compression = PNG_TEXT_COMPRESSION_NONE;
+			// 	text.key = (png_charp)"AnalogueGain";
+			// 	text.text = (png_charp)item.metadata_strings.back().c_str();
+			// 	text.text_length = item.metadata_strings.back().length();
+			// 	text.itxt_length = 0;
+			// 	text.lang = nullptr;
+			// 	text.lang_key = nullptr;
+			// 	text_chunks.push_back(text);
+			// }
+
+			// // Add digital gain
+			// auto dg = item.metadata.get(libcamera::controls::DigitalGain);
+			// if (dg)
+			// {
+			// 	std::ostringstream oss;
+			// 	oss << std::fixed << std::setprecision(2) << *dg;
+			// 	item.metadata_strings.push_back(oss.str());
+			// 	png_text text;
+			// 	text.compression = PNG_TEXT_COMPRESSION_NONE;
+			// 	text.key = (png_charp)"DigitalGain";
+			// 	text.text = (png_charp)item.metadata_strings.back().c_str();
+			// 	text.text_length = item.metadata_strings.back().length();
+			// 	text.itxt_length = 0;
+			// 	text.lang = nullptr;
+			// 	text.lang_key = nullptr;
+			// 	text_chunks.push_back(text);
+			// }
+
+			// Set the text chunks if we have any
+			if (!text_chunks.empty())
+			{
+				png_set_text(png_ptr, info_ptr, text_chunks.data(), text_chunks.size());
+			}
+		}
 
 		// Set up the image data
 		png_byte **row_ptrs = (png_byte **)png_malloc(png_ptr, item.info.height * sizeof(png_byte *));

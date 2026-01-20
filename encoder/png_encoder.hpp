@@ -11,6 +11,10 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <sstream>
+#include <iomanip>
+
+#include <libcamera/controls.h>
 
 #include "encoder.hpp"
 
