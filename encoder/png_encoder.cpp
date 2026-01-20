@@ -129,7 +129,7 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 			if (exposure_time)
 			{
 				std::ostringstream oss;
-				oss << std::fixed << std::setprecision(6) << (*exposure_time / 1000000.0) << " s";
+				oss << std::fixed << std::setprecision(6) << (exposure_time.get<std::chrono::microseconds>() / 1000000.0) << " s";
 				png_text text;
 				text.compression = PNG_TEXT_COMPRESSION_NONE;
 				text.key = (png_charp)"ExposureTime";
