@@ -21,11 +21,11 @@
 #include "core/logging.hpp"
 
 // Helper function to write little-endian values
-static void write_le16(uint8_t *buf, uint16_t value)
-{
-	buf[0] = value & 0xFF;
-	buf[1] = (value >> 8) & 0xFF;
-}
+// static void write_le16(uint8_t *buf, uint16_t value)
+// {
+// 	buf[0] = value & 0xFF;
+// 	buf[1] = (value >> 8) & 0xFF;
+// }
 
 static void write_le32(uint8_t *buf, uint32_t value)
 {
