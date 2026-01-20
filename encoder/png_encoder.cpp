@@ -11,12 +11,93 @@
 #include <cstring>
 #include <sstream>
 #include <iomanip>
+#include <vector>
+#include <algorithm>
 
 #include <png.h>
 #include <libcamera/control_ids.h>
 
 #include "png_encoder.hpp"
 #include "core/logging.hpp"
+
+// Helper function to write little-endian values
+static void write_le16(uint8_t *buf, uint16_t value)
+{
+	buf[0] = value & 0xFF;
+	buf[1] = (value >> 8) & 0xFF;
+}
+
+static void write_le32(uint8_t *buf, uint32_t value)
+{
+	buf[0] = value & 0xFF;
+	buf[1] = (value >> 8) & 0xFF;
+	buf[2] = (value >> 16) & 0xFF;
+	buf[3] = (value >> 24) & 0xFF;
+}
+
+// Build a minimal EXIF block with exposure time
+// EXIF structure: "Exif\0\0" + TIFF header + IFD with exposure time tag
+static std::vector<uint8_t> BuildExifBlock(double exposure_seconds)
+{
+	std::vector<uint8_t> exif_data;
+	
+	// EXIF header: "Exif\0\0"
+	exif_data.insert(exif_data.end(), { 'E', 'x', 'i', 'f', 0, 0 });
+	
+	// TIFF header (8 bytes)
+	// Byte order: 0x4949 = Intel (little-endian)
+	exif_data.insert(exif_data.end(), { 0x49, 0x49 });
+	// TIFF version: 42
+	exif_data.insert(exif_data.end(), { 0x2A, 0x00 });
+	// Offset to first IFD: 8 (points to IFD right after header)
+	exif_data.insert(exif_data.end(), { 0x08, 0x00, 0x00, 0x00 });
+	
+	// IFD (Image File Directory)
+	// Number of directory entries: 1 (just exposure time)
+	exif_data.insert(exif_data.end(), { 0x01, 0x00 });
+	
+	// EXIF_TAG_EXPOSURE_TIME = 0x829A
+	// Tag ID (2 bytes)
+	exif_data.insert(exif_data.end(), { 0x9A, 0x82 });
+	// Type: RATIONAL (5) = 2 bytes
+	exif_data.insert(exif_data.end(), { 0x05, 0x00 });
+	// Count: 1 = 4 bytes
+	exif_data.insert(exif_data.end(), { 0x01, 0x00, 0x00, 0x00 });
+	
+	// Value/Offset: For RATIONAL, this is an offset to the actual value
+	// We'll put the value right after the IFD, so offset is current size + 4 (for next IFD offset)
+	uint32_t value_offset = exif_data.size() + 4;
+	uint8_t offset_bytes[4];
+	write_le32(offset_bytes, value_offset);
+	exif_data.insert(exif_data.end(), offset_bytes, offset_bytes + 4);
+	
+	// Next IFD offset: 0 (no more IFDs)
+	exif_data.insert(exif_data.end(), { 0x00, 0x00, 0x00, 0x00 });
+	
+	// Exposure time value (RATIONAL: numerator, denominator)
+	// Convert seconds to rational (e.g., 1/50 = 1, 50)
+	uint32_t numerator, denominator;
+	if (exposure_seconds < 1.0)
+	{
+		// For fractions, use 1/denominator format
+		denominator = (uint32_t)(1.0 / exposure_seconds + 0.5);
+		numerator = 1;
+	}
+	else
+	{
+		// For >= 1 second, use seconds/1 format
+		numerator = (uint32_t)(exposure_seconds * 1000000 + 0.5);
+		denominator = 1000000;
+	}
+	
+	uint8_t num_bytes[4], den_bytes[4];
+	write_le32(num_bytes, numerator);
+	write_le32(den_bytes, denominator);
+	exif_data.insert(exif_data.end(), num_bytes, num_bytes + 4);
+	exif_data.insert(exif_data.end(), den_bytes, den_bytes + 4);
+	
+	return exif_data;
+}
 
 // Structure to hold memory buffer for PNG encoding
 struct PngMemoryBuffer
@@ -91,6 +172,7 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 	png_structp png_ptr = NULL;
 	png_infop info_ptr = NULL;
 	PngMemoryBuffer mem_buffer = { nullptr, 0, 0 };
+	std::vector<uint8_t> exif_data_storage; // Store EXIF data to keep it alive
 
 	try
 	{
@@ -121,25 +203,25 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		// Passing 0 to not compress the image
 		png_set_compression_level(png_ptr, options_->Get().png_compression_level);
 
-		// Add metadata as PNG tEXt chunks
-		// Store strings in a vector so they persist until png_write_png() completes
-		std::vector<std::string> metadata_strings;
-		std::vector<png_text> text_chunks;
+		// Add EXIF metadata as PNG eXIf chunk
 		auto exposure_time = options_->Get().shutter;
 		if (exposure_time)
 		{
-			std::ostringstream oss;
-			oss << std::fixed << std::setprecision(6) << (exposure_time.get<std::chrono::microseconds>() / 1000000.0) << " s";
-			metadata_strings.push_back(oss.str()); // Store string to keep it alive
-			png_text text;
-			text.compression = PNG_TEXT_COMPRESSION_NONE;
-			text.key = (png_charp)"ExposureTime";
-			text.text = (png_charp)metadata_strings.back().c_str();
-			text.text_length = metadata_strings.back().length();
-			text.itxt_length = 0;
-			text.lang = nullptr;
-			text.lang_key = nullptr;
-			text_chunks.push_back(text);
+			double exposure_seconds = exposure_time.get<std::chrono::microseconds>() / 1000000.0;
+			
+			// Build EXIF data block and store it to keep it alive
+			exif_data_storage = BuildExifBlock(exposure_seconds);
+			
+			// Create unknown chunk for EXIF
+			png_unknown_chunk exif_chunk;
+			memcpy(exif_chunk.name, "eXIf", 5); // 5 bytes: "eXIf" + null terminator
+			exif_chunk.data = exif_data_storage.data();
+			exif_chunk.size = exif_data_storage.size();
+			exif_chunk.location = PNG_HAVE_IHDR;
+			
+			// Add the EXIF chunk
+			png_set_unknown_chunks(png_ptr, info_ptr, &exif_chunk, 1);
+			png_set_unknown_chunk_location(png_ptr, info_ptr, 0, PNG_HAVE_IHDR);
 		}
 			// Add shutter speed (exposure time)
 			// auto exposure_time = item.metadata.get(libcamera::controls::ExposureTime);
@@ -177,11 +259,7 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 			// 	text_chunks.push_back(text);
 			// }
 
-		// Set the text chunks if we have any
-		if (!text_chunks.empty())
-		{
-			png_set_text(png_ptr, info_ptr, text_chunks.data(), text_chunks.size());
-		}
+		
 
 		// Set up the image data
 		png_byte **row_ptrs = (png_byte **)png_malloc(png_ptr, item.info.height * sizeof(png_byte *));
