@@ -131,21 +131,24 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		exif_set_string(entry, time_string);
 
 		// Add exposure time (shutter speed) - Windows Explorer expects this in EXIF sub-IFD
-		auto exposure_time = metadata.Get("exif_data.shutter_speed");
-		if (exposure_time)
+		float exposure_time;
+		auto exposure_time_defined = metadata.Get(std::string("exif_data.shutter_speed"), exposure_time);
+		if (exposure_time_defined == 0) {
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME);
-			ExifRational exposure = { (ExifLong)*exposure_time, 1000000 };
+			ExifRational exposure = { (ExifLong)exposure_time, 1000000 };
 			exif_set_rational(entry->data, exif_byte_order, exposure);
 		}
 
 		// Add ISO (from gains) - Windows Explorer expects this in EXIF sub-IFD
-		auto ag = metadata.Get("exif_data.analogue_gain");
-		if (ag)
+		float ag;
+		auto agDefined = metadata.Get(std::string("exif_data.analogue_gain"), ag);
+		if (agDefined == 0) {
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
-			auto dg = metadata.Get("exif_data.digital_gain");
-			float gain = *ag * (dg ? *dg : 1.0);
+			float dg;
+			auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
+			float gain = ag * (dgDefined == 0 ? 1.0 : dg);
 			exif_set_short(entry->data, exif_byte_order, (ExifShort)(100 * gain));
 		}
 
@@ -157,10 +160,11 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		exif_set_rational(entry->data, exif_byte_order, fnumber);
 
 		// Add lamp color to EXIF metadata as user comment
-		auto lamp_color = metadata.Get("exif_data.lamp_color");
-		if (lamp_color) {
+		std::string lamp_color;
+		auto lampDefined = metadata.Get(std::string("exif_data.lamp_color"), lamp_color);
+		if (lampDefined == 0) {
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT);
-			exif_set_string(entry, lamp_color->c_str());
+			exif_set_string(entry, lamp_color.c_str());
 		}
 
 		// Add focal length if available from options or can be calculated
