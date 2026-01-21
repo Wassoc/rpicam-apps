@@ -229,7 +229,8 @@ void MjpegEncoder::encodeJPEG(struct jpeg_compress_struct &cinfo, EncodeItem &it
 	// Add EXIF metadata if available
 	uint8_t *exif_buffer = nullptr;
 	unsigned int exif_len = 0;
-	if (item.metadata.Get(std::string("exif_data.lamp_color")))
+	std::string temp_lamp_color;
+	if (item.metadata.Get(std::string("exif_data.lamp_color"), temp_lamp_color) == 0)
 	{
 		try
 		{
