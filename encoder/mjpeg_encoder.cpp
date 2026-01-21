@@ -146,13 +146,13 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		if (agDefined == 0)
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
-			float dg;
 		}
 
+		float dg;
 		auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
 		if (dgDefined == 0)
 		{
-			float gain = ag * (dgDefined == 0 ? 1.0 : dg);
+			float gain = ag * (dgDefined == 0 ? dg : 1.0);
 			exif_set_short(entry->data, exif_byte_order, (ExifShort)(100 * gain));
 		}
 
