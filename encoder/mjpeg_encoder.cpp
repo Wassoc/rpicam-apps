@@ -19,7 +19,7 @@
 #include "core/metadata.hpp"
 
 #ifndef MAKE_STRING
-#define MAKE_STRING "Raspberry Pi"
+#define MAKE_STRING "Wassoc"
 #endif
 
 static const ExifByteOrder exif_byte_order = EXIF_BYTE_ORDER_INTEL;
@@ -168,25 +168,14 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		auto lampDefined = metadata.Get(std::string("exif_data.lamp_color"), lamp_color);
 		if (lampDefined == 0) {
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT);
-			exif_set_string(entry, lamp_color.c_str());
+			exif_set_string(entry, std::string("Lamp color: " + lamp_color).c_str());
 		}
 
-		// Add focal length if available from options or can be calculated
-		// Focal length is typically not in libcamera controls, but can be:
-		// 1. Set manually (uncomment and set value below)
-		// 2. Retrieved from camera properties (would need camera access)
-		// 3. Set via command-line option (would need to add to options)
-		// Example to add focal length manually (in mm, converted to hundredths):
-		// entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH);
-		// ExifRational focal = { 3500, 100 }; // 35mm = 3500/100
-		// exif_set_rational(entry->data, exif_byte_order, focal);
-		
-		// You can also add other EXIF tags here, such as:
-		// - EXIF_TAG_FNUMBER (aperture/f-stop)
-		// - EXIF_TAG_WHITE_BALANCE
-		// - EXIF_TAG_FLASH
-		// - EXIF_TAG_METERING_MODE
-		// etc.
+		// Set focal length to 12mm in EXIF
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH);
+		// EXIF focal length is a rational value, so 12/1 = 12mm
+		ExifRational focal_length = { 12, 1 };
+		exif_set_rational(entry->data, exif_byte_order, focal_length);
 
 		// Create the EXIF data buffer
 		// libexif should automatically set up the EXIF sub-IFD pointer when we add tags to EXIF_IFD_EXIF
