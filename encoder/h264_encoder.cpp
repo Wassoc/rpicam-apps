@@ -14,7 +14,7 @@
 
 #include <chrono>
 #include <iostream>
-
+#include "core/metadata.hpp"
 #include "h264_encoder.hpp"
 
 static int xioctl(int fd, unsigned long ctl, void *arg)
@@ -243,7 +243,7 @@ H264Encoder::~H264Encoder()
 	LOG(2, "H264Encoder closed");
 }
 
-void H264Encoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata)
+void H264Encoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
 {
 	(void)metadata; // Not used by H264 encoder
 	int index;

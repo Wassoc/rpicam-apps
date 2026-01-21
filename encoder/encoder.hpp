@@ -13,6 +13,7 @@
 
 #include "core/stream_info.hpp"
 #include "core/video_options.hpp"
+#include "core/metadata.hpp"
 
 typedef std::function<void(void *)> InputDoneCallback;
 typedef std::function<void(void *, size_t, int64_t, bool)> OutputReadyCallback;
@@ -34,7 +35,7 @@ public:
 	// Encode the given buffer. The buffer is specified both by an fd and size
 	// describing a DMABUF, and by a mmapped userland pointer.
 	// metadata is optional and may be empty if not available.
-	virtual void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata = libcamera::ControlList()) = 0;
+	virtual void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata = Metadata()) = 0;
 
 protected:
 	InputDoneCallback input_done_callback_;

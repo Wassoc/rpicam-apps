@@ -13,6 +13,7 @@
 #include <sched.h>
 
 #include "null_encoder.hpp"
+#include "core/metadata.hpp"
 
 NullEncoder::NullEncoder(VideoOptions const *options) : Encoder(options), abort_(false)
 {
@@ -38,7 +39,7 @@ NullEncoder::~NullEncoder()
 }
 
 // Push the buffer onto the output queue to be "encoded" and returned.
-void NullEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata)
+void NullEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
 {
 	(void)metadata; // Not used by null encoder
 	std::lock_guard<std::mutex> lock(output_mutex_);

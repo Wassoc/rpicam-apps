@@ -14,13 +14,14 @@
 
 #include "core/video_options.hpp"
 #include "encoder.hpp"
+#include "core/metadata.hpp"
 
 class NullEncoder : public Encoder
 {
 public:
 	NullEncoder(VideoOptions const *options);
 	~NullEncoder();
-	void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata = libcamera::ControlList()) override;
+	void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata = Metadata()) override;
 
 private:
 	void outputThread();

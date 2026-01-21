@@ -16,6 +16,7 @@
 
 #include "mjpeg_encoder.hpp"
 #include "core/logging.hpp"
+#include "core/metadata.hpp"
 
 #ifndef MAKE_STRING
 #define MAKE_STRING "Raspberry Pi"
@@ -50,7 +51,7 @@ MjpegEncoder::~MjpegEncoder()
 	LOG(2, "MjpegEncoder closed");
 }
 
-void MjpegEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata)
+void MjpegEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
 {
 	std::lock_guard<std::mutex> lock(encode_mutex_);
 	EncodeItem item = { mem, info, timestamp_us, index_++, metadata };
@@ -130,7 +131,7 @@ static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&e
 		exif_set_string(entry, time_string);
 
 		// Add exposure time (shutter speed) - Windows Explorer expects this in EXIF sub-IFD
-		auto exposure_time = metadata.get(libcamera::controls::ExposureTime);
+		auto exposure_time = metadata.Get("exif_data.shutter_speed");
 		if (exposure_time)
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME);
@@ -139,22 +140,13 @@ static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&e
 		}
 
 		// Add ISO (from gains) - Windows Explorer expects this in EXIF sub-IFD
-		auto ag = metadata.get(libcamera::controls::AnalogueGain);
+		auto ag = metadata.Get("exif_data.analogue_gain");
 		if (ag)
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
-			auto dg = metadata.get(libcamera::controls::DigitalGain);
+			auto dg = metadata.Get("exif_data.digital_gain");
 			float gain = *ag * (dg ? *dg : 1.0);
 			exif_set_short(entry->data, exif_byte_order, (ExifShort)(100 * gain));
-		}
-
-		// Add lens position (subject distance)
-		auto lp = metadata.get(libcamera::controls::LensPosition);
-		if (lp && *lp > 0.0)
-		{
-			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_SUBJECT_DISTANCE);
-			ExifRational dist = { 1000, (ExifLong)(1000.0 * *lp) };
-			exif_set_rational(entry->data, exif_byte_order, dist);
 		}
 
 		// Add fixed f-stop (aperture) value of f/16 to EXIF metadata
@@ -165,10 +157,10 @@ static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&e
 		exif_set_rational(entry->data, exif_byte_order, fnumber);
 
 		// Add lamp color to EXIF metadata as user comment
-		auto lamp_color = metadata.get("lamp_color");
+		auto lamp_color = metadata.Get("exif_data.lamp_color");
 		if (lamp_color) {
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT);
-			exif_set_string(entry, lamp_color.value().c_str());
+			exif_set_string(entry, lamp_color->c_str());
 		}
 
 		// Add focal length if available from options or can be calculated

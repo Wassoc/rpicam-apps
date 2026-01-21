@@ -170,7 +170,7 @@ PngEncoder::~PngEncoder()
 	LOG(2, "PngEncoder closed");
 }
 
-void PngEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata)
+void PngEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
 {
 	(void)metadata; // PNG encoder uses options for metadata, not frame metadata
 	std::lock_guard<std::mutex> lock(encode_mutex_);

@@ -18,6 +18,7 @@
 #include <iostream>
 
 #include "libav_encoder.hpp"
+#include "core/metadata.hpp"
 
 namespace {
 
@@ -418,7 +419,7 @@ LibAvEncoder::~LibAvEncoder()
 	LOG(2, "libav: codec closed");
 }
 
-void LibAvEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata)
+void LibAvEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
 {
 	(void)metadata; // Not used by libav encoder
 	AVFrame *frame = av_frame_alloc();
