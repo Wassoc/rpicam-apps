@@ -20,6 +20,7 @@ private:
     std::string rx_serial_device = "/dev/ttyAMA4";
     std::vector<std::string> lamp_pattern_vec;
     unsigned int lamp_pattern_index;
+    std::string current_lamp_color;
     
     // Send a command string over serial
     bool sendCommand(const std::string& command) {
@@ -290,6 +291,7 @@ public:
         }
         lamp_pattern_vec.push_back(lamp_pattern.substr(start));
         lamp_pattern_index = 0;
+        current_lamp_color = lamp_pattern_vec[lamp_pattern_index];
     }
 
     ~GpioHandler() {
@@ -297,7 +299,7 @@ public:
     }
 
     std::string getCurrentLampColor() {
-        return lamp_pattern_vec[lamp_pattern_index];
+        return current_lamp_color;
     }
 
     void setNextLampColor() {
@@ -306,9 +308,9 @@ public:
             lamp_pattern_index = 0;
         }
         std::string active_channels = "";
-        std::string current_color = lamp_pattern_vec[lamp_pattern_index];
-        for (unsigned int i = 0; i < current_color.size(); i++) {
-            char letter = current_color[i];
+        current_lamp_color = lamp_pattern_vec[lamp_pattern_index];
+        for (unsigned int i = 0; i < current_lamp_color.size(); i++) {
+            char letter = current_lamp_color[i];
             if (letter == 'R' || letter == 'r') {
                 active_channels += "0,";
                 wasColorSet = true;
