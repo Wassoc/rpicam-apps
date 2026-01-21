@@ -141,14 +141,14 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		}
 
 		// Add ISO (from gains) - Windows Explorer expects this in EXIF sub-IFD
-		float ag;
+		float ag = 1.0;
 		auto agDefined = metadata.Get(std::string("exif_data.analogue_gain"), ag);
 		if (agDefined == 0)
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
 		}
 
-		float dg;
+		float dg = 1.0;
 		auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
 		if (dgDefined == 0)
 		{
@@ -164,7 +164,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		exif_set_rational(entry->data, exif_byte_order, fnumber);
 
 		// Add lamp color to EXIF metadata as user comment
-		std::string lamp_color;
+		std::string lamp_color = "Unknown";
 		auto lampDefined = metadata.Get(std::string("exif_data.lamp_color"), lamp_color);
 		if (lampDefined == 0) {
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT);
