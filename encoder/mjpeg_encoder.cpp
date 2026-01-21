@@ -133,7 +133,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		// Add exposure time (shutter speed) - Windows Explorer expects this in EXIF sub-IFD
 		float exposure_time;
 		auto exposure_time_defined = metadata.Get(std::string("exif_data.shutter_speed"), exposure_time);
-		if (exposure_time_defined == 0) {
+		if (exposure_time_defined == 0)
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME);
 			ExifRational exposure = { (ExifLong)exposure_time, 1000000 };
@@ -143,11 +143,15 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		// Add ISO (from gains) - Windows Explorer expects this in EXIF sub-IFD
 		float ag;
 		auto agDefined = metadata.Get(std::string("exif_data.analogue_gain"), ag);
-		if (agDefined == 0) {
+		if (agDefined == 0)
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
 			float dg;
-			auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
+		}
+
+		auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
+		if (dgDefined == 0)
+		{
 			float gain = ag * (dgDefined == 0 ? 1.0 : dg);
 			exif_set_short(entry->data, exif_byte_order, (ExifShort)(100 * gain));
 		}
