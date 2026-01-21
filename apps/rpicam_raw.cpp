@@ -138,10 +138,13 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			continue;
 		}
 		// Placing this after the interval check so we only update the lamp after the correct image has been captured
+		CompletedRequestPtr completed_request = std::get<CompletedRequestPtr>(msg.payload);
 		if (lampHandler) {
+			std::string currentLampColor = lampHandler->getCurrentLampColor();
 			lampHandler->setNextLampColor();
+			completed_request->metadata.set("lamp_color", currentLampColor);
 		}
-		if (!app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), currentStream))
+		if (!app.EncodeBuffer(completed_request, currentStream))
 		{
 			// Keep advancing our "start time" if we're still waiting to start recording (e.g.
 			// waiting for synchronisation with another camera).

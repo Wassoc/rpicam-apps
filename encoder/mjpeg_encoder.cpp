@@ -112,9 +112,9 @@ static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&e
 		exif_set_string(entry, MAKE_STRING);
 		// Add MODEL tag - Windows Explorer often looks for this
 		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MODEL);
-		exif_set_string(entry, "Camera"); // Generic model name
+		exif_set_string(entry, "Shadowgraph-v3"); // Generic model name
 		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_SOFTWARE);
-		exif_set_string(entry, "rpicam-apps");
+		exif_set_string(entry, "Shadowgraph-v3");
 		
 		// Add date/time to IFD0 for Windows Explorer compatibility
 		std::time_t raw_time;
@@ -155,6 +155,20 @@ static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&e
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_SUBJECT_DISTANCE);
 			ExifRational dist = { 1000, (ExifLong)(1000.0 * *lp) };
 			exif_set_rational(entry->data, exif_byte_order, dist);
+		}
+
+		// Add fixed f-stop (aperture) value of f/16 to EXIF metadata
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FNUMBER);
+		// EXIF f-stop is a rational value: numerator=focal/aperture, denominator=1 (for whole numbers)
+		// For f/16, value is 16/1
+		ExifRational fnumber = { 16, 1 }; // f/16
+		exif_set_rational(entry->data, exif_byte_order, fnumber);
+
+		// Add lamp color to EXIF metadata as user comment
+		auto lamp_color = metadata.get("lamp_color");
+		if (lamp_color) {
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT);
+			exif_set_string(entry, lamp_color.value().c_str());
 		}
 
 		// Add focal length if available from options or can be calculated

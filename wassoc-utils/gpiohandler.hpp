@@ -296,6 +296,10 @@ public:
         closeGpio();
     }
 
+    std::string getCurrentLampColor() {
+        return lamp_pattern_vec[lamp_pattern_index];
+    }
+
     void setNextLampColor() {
         bool wasColorSet = false;
         if (lamp_pattern_index == lamp_pattern_vec.size()) {
