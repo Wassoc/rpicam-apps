@@ -58,10 +58,21 @@ bool PopulateExifDataStage::Process(CompletedRequestPtr &completed_request)
 	if (!stream_)
 		return false;
 
-	completed_request->post_process_metadata.Set("exif_data.shutter_speed", completed_request->metadata.get(libcamera::controls::ExposureTime));
-	completed_request->post_process_metadata.Set("exif_data.analogue_gain", completed_request->metadata.get(libcamera::controls::AnalogueGain));
-	completed_request->post_process_metadata.Set("exif_data.digital_gain", completed_request->metadata.get(libcamera::controls::DigitalGain));
-    completed_request->post_process_metadata.Set("exif_data.frame_lux", completed_request->metadata.get(libcamera::controls::Lux));
+	auto exposure_time = completed_request->metadata.get(libcamera::controls::ExposureTime);
+	if (exposure_time)
+		completed_request->post_process_metadata.Set("exif_data.shutter_speed", (float)*exposure_time);
+
+	auto analogue_gain = completed_request->metadata.get(libcamera::controls::AnalogueGain);
+	if (analogue_gain)
+		completed_request->post_process_metadata.Set("exif_data.analogue_gain", *analogue_gain);
+
+	auto digital_gain = completed_request->metadata.get(libcamera::controls::DigitalGain);
+	if (digital_gain)
+		completed_request->post_process_metadata.Set("exif_data.digital_gain", *digital_gain);
+
+	auto lux = completed_request->metadata.get(libcamera::controls::Lux);
+	if (lux)
+		completed_request->post_process_metadata.Set("exif_data.frame_lux", *lux);
 
 	return false;
 }
