@@ -85,7 +85,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	}
 
 	// TODO: handle timelapses where the requested framerate is less than one a second
-	for (unsigned int count = 0; ; count++)
+	for (long long count = -1; ; count++)
 	{
 		// Check for termination signals
 		if (signal_received == SIGTERM || signal_received == SIGINT) {
@@ -95,6 +95,11 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			return;
 		}
 		LibcameraRaw::Msg msg = app.Wait();
+
+		if (count == -1) {
+			// Skip the first frame to allow the camera to warm up
+			continue;
+		}
 
 		if (msg.type == RPiCamApp::MsgType::Timeout)
 		{
@@ -129,7 +134,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			} else {
 				continue;
 			}
-		} else if (options->Get().every_nth_frame > 1 && count % options->Get().every_nth_frame != 0) {
+		} else if (options->Get().every_nth_frame > 1 && count % (long long)options->Get().every_nth_frame != 0) {
 			continue;
 		}
 		// Placing this after the interval check so we only update the lamp after the correct image has been captured
