@@ -7,10 +7,23 @@
 
 #include <chrono>
 #include <iostream>
+#include <cstring>
+#include <ctime>
 
 #include <jpeglib.h>
+#include <libexif/exif-data.h>
+#include <libcamera/control_ids.h>
 
 #include "mjpeg_encoder.hpp"
+#include "core/logging.hpp"
+
+#ifndef MAKE_STRING
+#define MAKE_STRING "Raspberry Pi"
+#endif
+
+static const ExifByteOrder exif_byte_order = EXIF_BYTE_ORDER_INTEL;
+static const unsigned int exif_image_offset = 20; // offset of image in JPEG buffer
+static const unsigned char exif_header[] = { 0xff, 0xd8, 0xff, 0xe1 };
 
 #if JPEG_LIB_VERSION_MAJOR > 9 || (JPEG_LIB_VERSION_MAJOR == 9 && JPEG_LIB_VERSION_MINOR >= 4)
 typedef size_t jpeg_mem_len_t;
@@ -37,12 +50,132 @@ MjpegEncoder::~MjpegEncoder()
 	LOG(2, "MjpegEncoder closed");
 }
 
-void MjpegEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us)
+void MjpegEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata)
 {
 	std::lock_guard<std::mutex> lock(encode_mutex_);
-	EncodeItem item = { mem, info, timestamp_us, index_++ };
+	EncodeItem item = { mem, info, timestamp_us, index_++, metadata };
 	encode_queue_.push(item);
 	encode_cond_var_.notify_all();
+}
+
+// Helper function to create EXIF entry
+static ExifEntry *exif_create_tag(ExifData *exif, ExifIfd ifd, ExifTag tag)
+{
+	ExifEntry *entry = exif_content_get_entry(exif->ifd[ifd], tag);
+	if (entry)
+		return entry;
+	entry = exif_entry_new();
+	if (!entry)
+		throw std::runtime_error("failed to allocate EXIF entry");
+	entry->tag = tag;
+	exif_content_add_entry(exif->ifd[ifd], entry);
+	exif_entry_initialize(entry, entry->tag);
+	exif_entry_unref(entry);
+	return entry;
+}
+
+// Helper function to set EXIF string
+static void exif_set_string(ExifEntry *entry, char const *s)
+{
+	if (entry->data)
+		free(entry->data);
+	entry->size = entry->components = strlen(s);
+	entry->data = (unsigned char *)strdup(s);
+	if (!entry->data)
+		throw std::runtime_error("failed to copy exif string");
+	entry->format = EXIF_FORMAT_ASCII;
+}
+
+// Create EXIF data from metadata
+static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&exif_buffer, unsigned int &exif_len)
+{
+	exif_buffer = nullptr;
+	ExifData *exif = nullptr;
+
+	try
+	{
+		exif = exif_data_new();
+		if (!exif)
+			throw std::runtime_error("failed to allocate EXIF data");
+		exif_data_set_byte_order(exif, exif_byte_order);
+
+		// Add basic EXIF tags
+		ExifEntry *entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_MAKE);
+		exif_set_string(entry, MAKE_STRING);
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_SOFTWARE);
+		exif_set_string(entry, "rpicam-apps");
+		
+		// Add date/time
+		std::time_t raw_time;
+		std::time(&raw_time);
+		std::tm *time_info = std::localtime(&raw_time);
+		char time_string[32];
+		std::strftime(time_string, sizeof(time_string), "%Y:%m:%d %H:%M:%S", time_info);
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME);
+		exif_set_string(entry, time_string);
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL);
+		exif_set_string(entry, time_string);
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_DIGITIZED);
+		exif_set_string(entry, time_string);
+
+		// Add exposure time (shutter speed)
+		auto exposure_time = metadata.get(libcamera::controls::ExposureTime);
+		if (exposure_time)
+		{
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME);
+			ExifRational exposure = { (ExifLong)*exposure_time, 1000000 };
+			exif_set_rational(entry->data, exif_byte_order, exposure);
+		}
+
+		// Add ISO (from gains)
+		auto ag = metadata.get(libcamera::controls::AnalogueGain);
+		if (ag)
+		{
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
+			auto dg = metadata.get(libcamera::controls::DigitalGain);
+			float gain = *ag * (dg ? *dg : 1.0);
+			exif_set_short(entry->data, exif_byte_order, (ExifShort)(100 * gain));
+		}
+
+		// Add lens position (subject distance)
+		auto lp = metadata.get(libcamera::controls::LensPosition);
+		if (lp && *lp > 0.0)
+		{
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_SUBJECT_DISTANCE);
+			ExifRational dist = { 1000, (ExifLong)(1000.0 * *lp) };
+			exif_set_rational(entry->data, exif_byte_order, dist);
+		}
+
+		// Add focal length if available from options or can be calculated
+		// Focal length is typically not in libcamera controls, but can be:
+		// 1. Set manually (uncomment and set value below)
+		// 2. Retrieved from camera properties (would need camera access)
+		// 3. Set via command-line option (would need to add to options)
+		// Example to add focal length manually (in mm, converted to hundredths):
+		// entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH);
+		// ExifRational focal = { 3500, 100 }; // 35mm = 3500/100
+		// exif_set_rational(entry->data, exif_byte_order, focal);
+		
+		// You can also add other EXIF tags here, such as:
+		// - EXIF_TAG_FNUMBER (aperture/f-stop)
+		// - EXIF_TAG_WHITE_BALANCE
+		// - EXIF_TAG_FLASH
+		// - EXIF_TAG_METERING_MODE
+		// etc.
+
+		// Create the EXIF data buffer
+		exif_data_save_data(exif, &exif_buffer, &exif_len);
+		exif_data_unref(exif);
+		exif = nullptr;
+	}
+	catch (std::exception const &e)
+	{
+		if (exif)
+			exif_data_unref(exif);
+		if (exif_buffer)
+			free(exif_buffer);
+		throw;
+	}
 }
 
 void MjpegEncoder::encodeJPEG(struct jpeg_compress_struct &cinfo, EncodeItem &item, uint8_t *&encoded_buffer,
@@ -63,6 +196,38 @@ void MjpegEncoder::encodeJPEG(struct jpeg_compress_struct &cinfo, EncodeItem &it
 	jpeg_mem_len_t jpeg_mem_len;
 	jpeg_mem_dest(&cinfo, &encoded_buffer, &jpeg_mem_len);
 	jpeg_start_compress(&cinfo, TRUE);
+	
+	// Add EXIF metadata if available
+	uint8_t *exif_buffer = nullptr;
+	unsigned int exif_len = 0;
+	if (!item.metadata.empty())
+	{
+		try
+		{
+			create_exif_data(item.metadata, exif_buffer, exif_len);
+			if (exif_buffer && exif_len > 0)
+			{
+				// JPEG APP1 EXIF format requires "Exif\0\0" prefix
+				// libexif's exif_data_save_data returns TIFF data without this prefix
+				// So we need to prepend it
+				uint8_t exif_header[6] = { 'E', 'x', 'i', 'f', 0, 0 };
+				uint8_t *exif_with_header = (uint8_t *)malloc(6 + exif_len);
+				if (exif_with_header)
+				{
+					memcpy(exif_with_header, exif_header, 6);
+					memcpy(exif_with_header + 6, exif_buffer, exif_len);
+					// Write EXIF as APP1 segment
+					jpeg_write_marker(&cinfo, JPEG_APP0 + 1, exif_with_header, 6 + exif_len);
+					free(exif_with_header);
+				}
+			}
+		}
+		catch (std::exception const &e)
+		{
+			LOG_ERROR("Failed to create EXIF data: " << e.what());
+			// Continue without EXIF
+		}
+	}
 
 	int stride2 = item.info.stride / 2;
 	uint8_t *Y = (uint8_t *)item.mem;
@@ -89,6 +254,10 @@ void MjpegEncoder::encodeJPEG(struct jpeg_compress_struct &cinfo, EncodeItem &it
 
 	jpeg_finish_compress(&cinfo);
 	buffer_len = jpeg_mem_len;
+	
+	// Cleanup EXIF buffer
+	if (exif_buffer)
+		free(exif_buffer);
 }
 
 void MjpegEncoder::encodeThread(int num)

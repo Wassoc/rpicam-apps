@@ -71,7 +71,8 @@ public:
 			std::lock_guard<std::mutex> lock(encode_buffer_queue_mutex_);
 			encode_buffer_queue_.push(completed_request); // creates a new reference
 		}
-		encoder_->EncodeBuffer(buffer->planes()[0].fd.get(), span.size(), mem, info, timestamp_us);
+		// All encoders now accept metadata parameter
+		encoder_->EncodeBuffer(buffer->planes()[0].fd.get(), span.size(), mem, info, timestamp_us, completed_request->metadata);
 
 		// Tell our caller that encoding is underway.
 		return true;

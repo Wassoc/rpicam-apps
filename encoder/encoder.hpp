@@ -9,6 +9,8 @@
 
 #include <functional>
 
+#include <libcamera/controls.h>
+
 #include "core/stream_info.hpp"
 #include "core/video_options.hpp"
 
@@ -31,7 +33,8 @@ public:
 	void SetOutputReadyCallback(OutputReadyCallback callback) { output_ready_callback_ = callback; }
 	// Encode the given buffer. The buffer is specified both by an fd and size
 	// describing a DMABUF, and by a mmapped userland pointer.
-	virtual void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us) = 0;
+	// metadata is optional and may be empty if not available.
+	virtual void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata = libcamera::ControlList()) = 0;
 
 protected:
 	InputDoneCallback input_done_callback_;

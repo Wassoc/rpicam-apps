@@ -24,7 +24,7 @@ public:
 	PngEncoder(VideoOptions const *options);
 	~PngEncoder();
 	// Encode the given buffer.
-	void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us) override;
+	void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, libcamera::ControlList const &metadata = libcamera::ControlList()) override;
 
 private:
 	// These threads do the actual encoding.
