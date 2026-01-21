@@ -70,6 +70,14 @@ static ExifEntry *exif_create_tag(ExifData *exif, ExifIfd ifd, ExifTag tag)
 	entry->tag = tag;
 	exif_content_add_entry(exif->ifd[ifd], entry);
 	exif_entry_initialize(entry, entry->tag);
+	// Ensure data is allocated if entry_initialize didn't do it
+	if (entry->size > 0 && !entry->data)
+	{
+		entry->data = (unsigned char *)malloc(entry->size);
+		if (!entry->data)
+			throw std::runtime_error("failed to allocate EXIF entry data");
+		memset(entry->data, 0, entry->size);
+	}
 	exif_entry_unref(entry);
 	return entry;
 }
@@ -99,26 +107,29 @@ static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&e
 			throw std::runtime_error("failed to allocate EXIF data");
 		exif_data_set_byte_order(exif, exif_byte_order);
 
-		// Add basic EXIF tags
-		ExifEntry *entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_MAKE);
+		// Add basic EXIF tags to IFD0 (main image directory) for better Windows compatibility
+		ExifEntry *entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MAKE);
 		exif_set_string(entry, MAKE_STRING);
-		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_SOFTWARE);
+		// Add MODEL tag - Windows Explorer often looks for this
+		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MODEL);
+		exif_set_string(entry, "Camera"); // Generic model name
+		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_SOFTWARE);
 		exif_set_string(entry, "rpicam-apps");
 		
-		// Add date/time
+		// Add date/time to IFD0 for Windows Explorer compatibility
 		std::time_t raw_time;
 		std::time(&raw_time);
 		std::tm *time_info = std::localtime(&raw_time);
 		char time_string[32];
 		std::strftime(time_string, sizeof(time_string), "%Y:%m:%d %H:%M:%S", time_info);
-		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME);
+		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
 		exif_set_string(entry, time_string);
 		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL);
 		exif_set_string(entry, time_string);
 		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_DIGITIZED);
 		exif_set_string(entry, time_string);
 
-		// Add exposure time (shutter speed)
+		// Add exposure time (shutter speed) - Windows Explorer expects this in EXIF sub-IFD
 		auto exposure_time = metadata.get(libcamera::controls::ExposureTime);
 		if (exposure_time)
 		{
@@ -127,7 +138,7 @@ static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&e
 			exif_set_rational(entry->data, exif_byte_order, exposure);
 		}
 
-		// Add ISO (from gains)
+		// Add ISO (from gains) - Windows Explorer expects this in EXIF sub-IFD
 		auto ag = metadata.get(libcamera::controls::AnalogueGain);
 		if (ag)
 		{
@@ -164,7 +175,11 @@ static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&e
 		// etc.
 
 		// Create the EXIF data buffer
+		// libexif should automatically set up the EXIF sub-IFD pointer when we add tags to EXIF_IFD_EXIF
 		exif_data_save_data(exif, &exif_buffer, &exif_len);
+		if (!exif_buffer || exif_len == 0)
+			throw std::runtime_error("failed to save EXIF data");
+		LOG(2, "Created EXIF data, length: " << exif_len);
 		exif_data_unref(exif);
 		exif = nullptr;
 	}
@@ -207,19 +222,32 @@ void MjpegEncoder::encodeJPEG(struct jpeg_compress_struct &cinfo, EncodeItem &it
 			create_exif_data(item.metadata, exif_buffer, exif_len);
 			if (exif_buffer && exif_len > 0)
 			{
-				// JPEG APP1 EXIF format requires "Exif\0\0" prefix
-				// libexif's exif_data_save_data returns TIFF data without this prefix
-				// So we need to prepend it
-				uint8_t exif_header[6] = { 'E', 'x', 'i', 'f', 0, 0 };
-				uint8_t *exif_with_header = (uint8_t *)malloc(6 + exif_len);
-				if (exif_with_header)
+				// Check if libexif already includes "Exif\0\0" prefix
+				// libexif's exif_data_save_data should return data starting with TIFF header (0x4949 or 0x4D4D)
+				// JPEG APP1 requires "Exif\0\0" prefix before TIFF data
+				bool needs_prefix = (exif_len < 6 || memcmp(exif_buffer, "Exif", 4) != 0);
+				if (needs_prefix)
 				{
-					memcpy(exif_with_header, exif_header, 6);
-					memcpy(exif_with_header + 6, exif_buffer, exif_len);
-					// Write EXIF as APP1 segment
-					jpeg_write_marker(&cinfo, JPEG_APP0 + 1, exif_with_header, 6 + exif_len);
-					free(exif_with_header);
+					// JPEG APP1 EXIF format requires "Exif\0\0" prefix
+					// libexif's exif_data_save_data returns TIFF data without this prefix
+					// So we need to prepend it
+					uint8_t exif_header[6] = { 'E', 'x', 'i', 'f', 0, 0 };
+					uint8_t *exif_with_header = (uint8_t *)malloc(6 + exif_len);
+					if (exif_with_header)
+					{
+						memcpy(exif_with_header, exif_header, 6);
+						memcpy(exif_with_header + 6, exif_buffer, exif_len);
+						// Write EXIF as APP1 segment
+						jpeg_write_marker(&cinfo, JPEG_APP0 + 1, exif_with_header, 6 + exif_len);
+						free(exif_with_header);
+					}
 				}
+				else
+				{
+					// Already has prefix, write directly
+					jpeg_write_marker(&cinfo, JPEG_APP0 + 1, exif_buffer, exif_len);
+				}
+				LOG(2, "Wrote EXIF marker, size: " << (needs_prefix ? exif_len + 6 : exif_len));
 			}
 		}
 		catch (std::exception const &e)
