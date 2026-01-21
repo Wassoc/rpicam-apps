@@ -96,7 +96,7 @@ static void exif_set_string(ExifEntry *entry, char const *s)
 }
 
 // Create EXIF data from metadata
-static void create_exif_data(libcamera::ControlList const &metadata, uint8_t *&exif_buffer, unsigned int &exif_len)
+static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, unsigned int &exif_len)
 {
 	exif_buffer = nullptr;
 	ExifData *exif = nullptr;
@@ -221,7 +221,7 @@ void MjpegEncoder::encodeJPEG(struct jpeg_compress_struct &cinfo, EncodeItem &it
 	// Add EXIF metadata if available
 	uint8_t *exif_buffer = nullptr;
 	unsigned int exif_len = 0;
-	if (!item.metadata.empty())
+	if (item.metadata.Get("exif_data.lamp_color"))
 	{
 		try
 		{
