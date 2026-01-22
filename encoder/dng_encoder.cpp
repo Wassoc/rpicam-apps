@@ -622,7 +622,7 @@ void DngEncoder::encodeDNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		black = 64 + 4;
 	}
 	float black_levels[] = { black, black, black, black };
-	auto bl = item.control_list_metadata(libcamera::controls::SensorBlackLevels);
+	auto bl = item.control_list_metadata.get(libcamera::controls::SensorBlackLevels);
 	if (bl)
 	{
 		for (int i = 0; i < 4; i++)
