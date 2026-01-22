@@ -282,13 +282,22 @@ struct TiffMemoryBuffer
 	size_t position;
 };
 
-// Custom read function for libtiff (not used for writing, but required)
+// Custom read function for libtiff (needed when reading back directories)
 static tsize_t tiff_read(thandle_t handle, tdata_t data, tsize_t size)
 {
-	(void)handle;
-	(void)data;
-	(void)size;
-	return 0;
+	TiffMemoryBuffer *buffer = (TiffMemoryBuffer *)handle;
+
+	// Don't read beyond the current buffer size
+	if (buffer->position + size > buffer->size)
+		size = (buffer->size > buffer->position) ? (buffer->size - buffer->position) : 0;
+
+	if (size > 0)
+	{
+		memcpy(data, buffer->data + buffer->position, size);
+		buffer->position += size;
+	}
+
+	return size;
 }
 
 // Custom write function for libtiff to write to memory
@@ -303,10 +312,14 @@ static tsize_t tiff_write(thandle_t handle, tdata_t data, tsize_t size)
 		if (new_capacity < buffer->position + size)
 			new_capacity = buffer->position + size + 1024 * 1024; // Add 1MB extra space
 		
+		size_t old_capacity = buffer->capacity;
 		uint8_t *new_data = (uint8_t *)realloc(buffer->data, new_capacity);
 		if (!new_data)
 			return -1;
 		buffer->data = new_data;
+		// Zero-initialize the newly allocated memory
+		if (new_capacity > old_capacity)
+			memset(buffer->data + old_capacity, 0, new_capacity - old_capacity);
 		buffer->capacity = new_capacity;
 	}
 	
@@ -341,11 +354,14 @@ static toff_t tiff_seek(thandle_t handle, toff_t offset, int whence)
 	// Grow buffer if seeking beyond current size
 	if (buffer->position > buffer->capacity)
 	{
+		size_t old_capacity = buffer->capacity;
 		size_t new_capacity = buffer->position + 1024 * 1024;
 		uint8_t *new_data = (uint8_t *)realloc(buffer->data, new_capacity);
 		if (!new_data)
 			return -1;
 		buffer->data = new_data;
+		// Zero-initialize the newly allocated memory
+		memset(buffer->data + old_capacity, 0, new_capacity - old_capacity);
 		buffer->capacity = new_capacity;
 	}
 	
@@ -854,7 +870,7 @@ void DngEncoder::encodeDNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		TIFFSetDirectory(tif, 0);
 		TIFFSetField(tif, TIFFTAG_SUBIFD, 1, &offset_subifd);
 		TIFFSetField(tif, TIFFTAG_EXIFIFD, offset_exififd);
-		TIFFWriteDirectory(tif);
+		TIFFRewriteDirectory(tif);
 		
 		TIFFUnlinkDirectory(tif, 2);
 		TIFFClose(tif);
