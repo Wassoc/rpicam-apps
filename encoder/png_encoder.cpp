@@ -27,7 +27,11 @@
 #define MAKE_STRING "Wassoc"
 #endif
 
-static const ExifByteOrder exif_byte_order = EXIF_BYTE_ORDER_INTEL;
+// Use a function to avoid static initialization order issues
+static ExifByteOrder get_exif_byte_order()
+{
+	return EXIF_BYTE_ORDER_INTEL;
+}
 
 // Helper function to create EXIF entry
 static ExifEntry *exif_create_tag(ExifData *exif, ExifIfd ifd, ExifTag tag)
@@ -80,7 +84,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		if (!exif)
 			throw std::runtime_error("failed to allocate EXIF data");
 		LOG(1, "create_exif_data: Setting byte order");
-		exif_data_set_byte_order(exif, exif_byte_order);
+		exif_data_set_byte_order(exif, get_exif_byte_order());
 
 		LOG(1, "create_exif_data: Getting camera serial number");
 		std::string camera_serial_number = "Unknown";
@@ -121,7 +125,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME);
 			ExifRational exposure = { (ExifLong)exposure_time, 1000000 };
-			exif_set_rational(entry->data, exif_byte_order, exposure);
+			exif_set_rational(entry->data, get_exif_byte_order(), exposure);
 		}
 
 		// Add ISO (from gains) - Windows Explorer expects this in EXIF sub-IFD
@@ -134,7 +138,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 			float dg = 1.0;
 			auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
 			float gain = ag * (dgDefined == 0 ? dg : 1.0);
-			exif_set_short(entry->data, exif_byte_order, (ExifShort)(100 * gain));
+			exif_set_short(entry->data, get_exif_byte_order(), (ExifShort)(100 * gain));
 		}
 
 		// Add fixed f-stop (aperture) value of f/16 to EXIF metadata
@@ -143,7 +147,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		// EXIF f-stop is a rational value: numerator=focal/aperture, denominator=1 (for whole numbers)
 		// For f/16, value is 16/1
 		ExifRational fnumber = { 16, 1 }; // f/16
-		exif_set_rational(entry->data, exif_byte_order, fnumber);
+		exif_set_rational(entry->data, get_exif_byte_order(), fnumber);
 
 		// Add lamp color to EXIF metadata as user comment
 		LOG(1, "create_exif_data: Processing lamp color");
@@ -159,7 +163,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH);
 		// EXIF focal length is a rational value, so 12/1 = 12mm
 		ExifRational focal_length = { 12, 1 };
-		exif_set_rational(entry->data, exif_byte_order, focal_length);
+		exif_set_rational(entry->data, get_exif_byte_order(), focal_length);
 
 		// Add camera serial number to EXIF metadata
 		// Try IFD0 first for better Windows Explorer compatibility
@@ -325,6 +329,8 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		png_set_compression_level(png_ptr, options_->Get().png_compression_level);
 
 		// Add EXIF metadata as PNG eXIf chunk (mimics mjpeg_encoder.cpp)
+		// TEMPORARILY DISABLED FOR DEBUGGING
+		/*
 		LOG(1, "encodePNG: About to check for lamp color metadata");
 		LOG(1, "encodePNG: item.metadata address: " << (void*)&item.metadata);
 		std::string temp_lamp_color;
@@ -405,6 +411,7 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		{
 			LOG(1, "encodePNG: No lamp color metadata, skipping EXIF");
 		}
+		*/
 			// Add shutter speed (exposure time)
 			// auto exposure_time = item.metadata.get(libcamera::controls::ExposureTime);
 			// if (exposure_time)
