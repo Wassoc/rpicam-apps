@@ -177,6 +177,14 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		ExifRational focal_length = { 12, 1 };
 		exif_set_rational(entry->data, exif_byte_order, focal_length);
 
+		// Add camera serial number to EXIF metadata as user comment
+		std::string camera_serial_number = "Unknown";
+		auto camera_serial_number_defined = metadata.Get(std::string("exif_data.camera_serial_number"), camera_serial_number);
+		if (camera_serial_number_defined == 0) {
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_BODY_SERIAL_NUMBER);
+			exif_set_string(entry, camera_serial_number.c_str());
+		}
+
 		// Create the EXIF data buffer
 		// libexif should automatically set up the EXIF sub-IFD pointer when we add tags to EXIF_IFD_EXIF
 		exif_data_save_data(exif, &exif_buffer, &exif_len);

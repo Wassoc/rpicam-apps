@@ -274,6 +274,7 @@ struct OptsInternal
 	unsigned int b_brightness;
 	std::string output_metadata_location;
 	bool fire_and_forget;
+	std::string camera_serial_number;
 	// End Wassoc custom options
 	
 	bool hflip_;

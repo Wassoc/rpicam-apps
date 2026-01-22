@@ -143,6 +143,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			std::string currentLampColor = lampHandler->getCurrentLampColor();
 			lampHandler->setNextLampColor();
 			completed_request->post_process_metadata.Set("exif_data.lamp_color", currentLampColor);
+			completed_request->post_process_metadata.Set("exif_data.camera_serial_number", options->Get().camera_serial_number);
 		}
 		if (!app.EncodeBuffer(completed_request, currentStream))
 		{

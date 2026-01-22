@@ -356,6 +356,8 @@ Options::Options()
 			"Set the location of the output metadata file")
 		("fire-and-forget", value<bool>(&v_->fire_and_forget)->default_value(false)->implicit_value(true),
 			"Fire and forget the lamp commands")
+		("camera-serial-number", value<std::string>(&v_->camera_serial_number)->default_value(""),
+			"Set the serial number of the camera (used for EXIF data)")
 		// End Wassoc custom options
 		;
 	// clang-format on
