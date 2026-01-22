@@ -68,29 +68,38 @@ static void exif_set_string(ExifEntry *entry, char const *s)
 // Create EXIF data from metadata (mimics mjpeg_encoder.cpp)
 static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, unsigned int &exif_len)
 {
+	LOG(1, "create_exif_data: Starting");
 	exif_buffer = nullptr;
 	ExifData *exif = nullptr;
 
 	try
 	{
+		LOG(1, "create_exif_data: Creating ExifData");
 		exif = exif_data_new();
 		if (!exif)
 			throw std::runtime_error("failed to allocate EXIF data");
+		LOG(1, "create_exif_data: Setting byte order");
 		exif_data_set_byte_order(exif, exif_byte_order);
 
+		LOG(1, "create_exif_data: Getting camera serial number");
 		std::string camera_serial_number = "Unknown";
 		auto camera_serial_number_defined = metadata.Get(std::string("exif_data.camera_serial_number"), camera_serial_number);
+		LOG(1, "create_exif_data: Camera serial: " << camera_serial_number);
 
 		// Add basic EXIF tags to IFD0 (main image directory) for better Windows compatibility
+		LOG(1, "create_exif_data: Creating MAKE tag");
 		ExifEntry *entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MAKE);
 		exif_set_string(entry, MAKE_STRING);
+		LOG(1, "create_exif_data: Creating MODEL tag");
 		// Add MODEL tag - Windows Explorer often looks for this
 		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MODEL);
 		exif_set_string(entry, std::string("Shadowgraph-v3 (SN: " + camera_serial_number + ")").c_str());
+		LOG(1, "create_exif_data: Creating SOFTWARE tag");
 		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_SOFTWARE);
 		exif_set_string(entry, "Shadowgraph-v3");
 		
 		// Add date/time to IFD0 for Windows Explorer compatibility
+		LOG(1, "create_exif_data: Creating date/time tags");
 		std::time_t raw_time;
 		std::time(&raw_time);
 		std::tm *time_info = std::localtime(&raw_time);
@@ -104,6 +113,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		exif_set_string(entry, time_string);
 
 		// Add exposure time (shutter speed) - Windows Explorer expects this in EXIF sub-IFD
+		LOG(1, "create_exif_data: Processing exposure time");
 		float exposure_time;
 		auto exposure_time_defined = metadata.Get(std::string("exif_data.shutter_speed"), exposure_time);
 		if (exposure_time_defined == 0)
@@ -114,6 +124,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		}
 
 		// Add ISO (from gains) - Windows Explorer expects this in EXIF sub-IFD
+		LOG(1, "create_exif_data: Processing ISO/gains");
 		float ag = 1.0;
 		auto agDefined = metadata.Get(std::string("exif_data.analogue_gain"), ag);
 		if (agDefined == 0)
@@ -126,6 +137,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		}
 
 		// Add fixed f-stop (aperture) value of f/16 to EXIF metadata
+		LOG(1, "create_exif_data: Creating f-number tag");
 		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FNUMBER);
 		// EXIF f-stop is a rational value: numerator=focal/aperture, denominator=1 (for whole numbers)
 		// For f/16, value is 16/1
@@ -133,6 +145,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		exif_set_rational(entry->data, exif_byte_order, fnumber);
 
 		// Add lamp color to EXIF metadata as user comment
+		LOG(1, "create_exif_data: Processing lamp color");
 		std::string lamp_color = "Unknown";
 		auto lampDefined = metadata.Get(std::string("exif_data.lamp_color"), lamp_color);
 		if (lampDefined == 0) {
@@ -141,6 +154,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		}
 
 		// Set focal length to 12mm in EXIF
+		LOG(1, "create_exif_data: Creating focal length tag");
 		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH);
 		// EXIF focal length is a rational value, so 12/1 = 12mm
 		ExifRational focal_length = { 12, 1 };
@@ -148,6 +162,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 
 		// Add camera serial number to EXIF metadata
 		// Try IFD0 first for better Windows Explorer compatibility
+		LOG(1, "create_exif_data: Processing camera serial number");
 		if (camera_serial_number_defined == 0 && !camera_serial_number.empty()) {
 			// Try in IFD0 for Windows Explorer compatibility
 			entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_BODY_SERIAL_NUMBER);
@@ -159,12 +174,15 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 
 		// Create the EXIF data buffer
 		// libexif should automatically set up the EXIF sub-IFD pointer when we add tags to EXIF_IFD_EXIF
+		LOG(1, "create_exif_data: Saving EXIF data");
 		exif_data_save_data(exif, &exif_buffer, &exif_len);
 		if (!exif_buffer || exif_len == 0)
 			throw std::runtime_error("failed to save EXIF data");
-		LOG(2, "Created EXIF data, length: " << exif_len);
+		LOG(1, "create_exif_data: Created EXIF data, length: " << exif_len);
+		LOG(1, "create_exif_data: Unreferencing ExifData");
 		exif_data_unref(exif);
 		exif = nullptr;
+		LOG(1, "create_exif_data: Completed successfully");
 	}
 	catch (std::exception const &e)
 	{
@@ -281,59 +299,81 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		png_set_compression_level(png_ptr, options_->Get().png_compression_level);
 
 		// Add EXIF metadata as PNG eXIf chunk (mimics mjpeg_encoder.cpp)
+		LOG(1, "encodePNG: Checking for lamp color metadata");
 		std::string temp_lamp_color;
 		if (item.metadata.Get(std::string("exif_data.lamp_color"), temp_lamp_color) == 0)
 		{
+			LOG(1, "encodePNG: Lamp color found, creating EXIF data");
 			uint8_t *exif_buffer = nullptr;
 			unsigned int exif_len = 0;
 			try
 			{
+				LOG(1, "encodePNG: Calling create_exif_data");
 				create_exif_data(item.metadata, exif_buffer, exif_len);
+				LOG(1, "encodePNG: create_exif_data returned, buffer=" << (void*)exif_buffer << ", len=" << exif_len);
 				if (exif_buffer && exif_len > 0)
 				{
+					LOG(1, "encodePNG: Processing EXIF buffer");
 					// PNG eXIf chunk requires "Exif\0\0" prefix before TIFF data
 					// libexif's exif_data_save_data returns TIFF data without this prefix
 					bool needs_prefix = (exif_len < 6 || memcmp(exif_buffer, "Exif", 4) != 0);
+					LOG(1, "encodePNG: needs_prefix=" << needs_prefix);
 					if (needs_prefix)
 					{
+						LOG(1, "encodePNG: Adding Exif prefix");
 						// PNG eXIf format requires "Exif\0\0" prefix
 						uint8_t exif_header[6] = { 'E', 'x', 'i', 'f', 0, 0 };
 						exif_data_storage.resize(6 + exif_len);
 						memcpy(exif_data_storage.data(), exif_header, 6);
 						memcpy(exif_data_storage.data() + 6, exif_buffer, exif_len);
+						LOG(1, "encodePNG: Copied EXIF data with prefix");
 					}
 					else
 					{
+						LOG(1, "encodePNG: Copying EXIF data without prefix");
 						// Already has prefix, copy directly
 						exif_data_storage.resize(exif_len);
 						memcpy(exif_data_storage.data(), exif_buffer, exif_len);
 					}
 					// Free the buffer now that we've copied it
+					LOG(1, "encodePNG: Freeing exif_buffer");
 					free(exif_buffer);
 					exif_buffer = nullptr;
 					// Create unknown chunk for EXIF
+					LOG(1, "encodePNG: Creating PNG unknown chunk");
 					png_unknown_chunk exif_chunk;
 					memcpy(exif_chunk.name, "eXIf", 5); // 5 bytes: "eXIf" + null terminator
 					exif_chunk.data = exif_data_storage.data();
 					exif_chunk.size = exif_data_storage.size();
 					exif_chunk.location = PNG_HAVE_IHDR;
 					// Add the EXIF chunk
+					LOG(1, "encodePNG: Setting PNG unknown chunks");
 					png_set_unknown_chunks(png_ptr, info_ptr, &exif_chunk, 1);
+					LOG(1, "encodePNG: Setting PNG unknown chunk location");
 					png_set_unknown_chunk_location(png_ptr, info_ptr, 0, PNG_HAVE_IHDR);
-					LOG(2, "Wrote EXIF chunk, size: " << exif_data_storage.size());
+					LOG(1, "encodePNG: Wrote EXIF chunk, size: " << exif_data_storage.size());
+				}
+				else
+				{
+					LOG(1, "encodePNG: exif_buffer is null or exif_len is 0");
 				}
 			}
 			catch (std::exception const &e)
 			{
-				LOG_ERROR("Failed to create EXIF data: " << e.what());
+				LOG_ERROR("encodePNG: Failed to create EXIF data: " << e.what());
 				// Ensure exif_buffer is freed even on error
 				if (exif_buffer)
 				{
+					LOG(1, "encodePNG: Freeing exif_buffer in catch block");
 					free(exif_buffer);
 					exif_buffer = nullptr;
 				}
 				// Continue without EXIF
 			}
+		}
+		else
+		{
+			LOG(1, "encodePNG: No lamp color metadata, skipping EXIF");
 		}
 			// Add shutter speed (exposure time)
 			// auto exposure_time = item.metadata.get(libcamera::controls::ExposureTime);
