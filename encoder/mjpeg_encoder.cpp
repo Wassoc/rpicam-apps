@@ -108,12 +108,15 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 			throw std::runtime_error("failed to allocate EXIF data");
 		exif_data_set_byte_order(exif, exif_byte_order);
 
+		std::string camera_serial_number = "Unknown";
+		auto camera_serial_number_defined = metadata.Get(std::string("exif_data.camera_serial_number"), camera_serial_number);
+
 		// Add basic EXIF tags to IFD0 (main image directory) for better Windows compatibility
 		ExifEntry *entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MAKE);
 		exif_set_string(entry, MAKE_STRING);
 		// Add MODEL tag - Windows Explorer often looks for this
 		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MODEL);
-		exif_set_string(entry, "Shadowgraph-v3"); // Generic model name
+		exif_set_string(entry, std::string("Shadowgraph-v3 (SN: " + camera_serial_number + ")").c_str()); // Generic model name
 		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_SOFTWARE);
 		exif_set_string(entry, "Shadowgraph-v3");
 		
@@ -179,9 +182,6 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 
 		// Add camera serial number to EXIF metadata
 		// Try IFD0 first for better Windows Explorer compatibility
-		std::string camera_serial_number = "Unknown";
-		auto camera_serial_number_defined = metadata.Get(std::string("exif_data.camera_serial_number"), camera_serial_number);
-		LOG(1, "Camera serial number: " << camera_serial_number);
 		if (camera_serial_number_defined == 0 && !camera_serial_number.empty()) {
 			// Try in IFD0 for Windows Explorer compatibility
 			entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_BODY_SERIAL_NUMBER);
