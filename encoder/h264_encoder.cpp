@@ -243,9 +243,10 @@ H264Encoder::~H264Encoder()
 	LOG(2, "H264Encoder closed");
 }
 
-void H264Encoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
+void H264Encoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &post_process_metadata, libcamera::ControlList const &control_list_metadata)
 {
-	(void)metadata; // Not used by H264 encoder
+	(void)post_process_metadata; // Not used by H264 encoder
+	(void)control_list_metadata; // Not used by H264 encoder
 	int index;
 	{
 		// We need to find an available output buffer (input to the codec) to

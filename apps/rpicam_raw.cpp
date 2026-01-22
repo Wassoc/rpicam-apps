@@ -13,6 +13,7 @@
 #include "encoder/null_encoder.hpp"
 #include "encoder/mjpeg_encoder.hpp"
 #include "encoder/png_encoder.hpp"
+#include "encoder/dng_encoder.hpp"
 #include "output/output.hpp"
 #include "wassoc-utils/gpiohandler.hpp"
 
@@ -40,7 +41,7 @@ protected:
 		} else if (GetOptions()->Get().force_jpeg || GetOptions()->Get().force_still) {
 			encoder_ = std::unique_ptr<Encoder>(new MjpegEncoder(GetOptions()));
 		} else {
-			encoder_ = std::unique_ptr<Encoder>(new NullEncoder(GetOptions()));
+			encoder_ = std::unique_ptr<Encoder>(new DngEncoder(GetOptions()));
 		}
 	}
 };

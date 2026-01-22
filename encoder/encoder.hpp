@@ -35,7 +35,7 @@ public:
 	// Encode the given buffer. The buffer is specified both by an fd and size
 	// describing a DMABUF, and by a mmapped userland pointer.
 	// metadata is optional and may be empty if not available.
-	virtual void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata = Metadata()) = 0;
+	virtual void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &post_process_metadata = Metadata(), libcamera::ControlList const &control_list_metadata = libcamera::ControlList()) = 0;
 
 protected:
 	InputDoneCallback input_done_callback_;

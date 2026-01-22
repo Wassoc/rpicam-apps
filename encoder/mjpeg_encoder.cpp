@@ -51,10 +51,11 @@ MjpegEncoder::~MjpegEncoder()
 	LOG(2, "MjpegEncoder closed");
 }
 
-void MjpegEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
+void MjpegEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &post_process_metadata, libcamera::ControlList const &control_list_metadata)
 {
+	(void)control_list_metadata; // Not used by MJPEG encoder
 	std::lock_guard<std::mutex> lock(encode_mutex_);
-	EncodeItem item = { mem, info, timestamp_us, index_++, metadata };
+	EncodeItem item = { mem, info, timestamp_us, index_++, post_process_metadata };
 	encode_queue_.push(item);
 	encode_cond_var_.notify_all();
 }

@@ -419,9 +419,10 @@ LibAvEncoder::~LibAvEncoder()
 	LOG(2, "libav: codec closed");
 }
 
-void LibAvEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
+void LibAvEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &post_process_metadata, libcamera::ControlList const &control_list_metadata)
 {
-	(void)metadata; // Not used by libav encoder
+	(void)post_process_metadata; // Not used by libav encoder
+	(void)control_list_metadata; // Not used by libav encoder
 	AVFrame *frame = av_frame_alloc();
 	if (!frame)
 		throw std::runtime_error("libav: could not allocate AVFrame");

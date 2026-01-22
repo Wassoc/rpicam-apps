@@ -2,7 +2,7 @@
 /*
  * Copyright (C) 2020, Raspberry Pi (Trading) Ltd.
  *
- * png_encoder.hpp - PNG video encoder.
+ * dng_encoder.hpp - DNG video encoder.
  */
 
 #pragma once
@@ -11,19 +11,17 @@
 #include <mutex>
 #include <queue>
 #include <thread>
-#include <sstream>
-#include <iomanip>
 
 #include <libcamera/controls.h>
 
 #include "encoder.hpp"
 #include "core/metadata.hpp"
 
-class PngEncoder : public Encoder
+class DngEncoder : public Encoder
 {
 public:
-	PngEncoder(VideoOptions const *options);
-	~PngEncoder();
+	DngEncoder(VideoOptions const *options);
+	~DngEncoder();
 	// Encode the given buffer.
 	void EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &post_process_metadata = Metadata(), libcamera::ControlList const &control_list_metadata = libcamera::ControlList()) override;
 
@@ -50,12 +48,13 @@ private:
 		int64_t timestamp_us;
 		uint64_t index;
 		Metadata metadata; // Optional metadata for EXIF
+		libcamera::ControlList control_list_metadata; // Optional metadata for EXIF
 	};
 	std::queue<EncodeItem> encode_queue_;
 	std::mutex encode_mutex_;
 	std::condition_variable encode_cond_var_;
 	std::thread encode_thread_[NUM_ENC_THREADS];
-	void encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &buffer_len);
+	void encodeDNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &buffer_len);
 
 	struct OutputItem
 	{
