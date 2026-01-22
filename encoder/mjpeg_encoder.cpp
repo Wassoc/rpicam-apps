@@ -181,6 +181,7 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		// Try IFD0 first for better Windows Explorer compatibility
 		std::string camera_serial_number = "Unknown";
 		auto camera_serial_number_defined = metadata.Get(std::string("exif_data.camera_serial_number"), camera_serial_number);
+		LOG(1, "Camera serial number: " << camera_serial_number);
 		if (camera_serial_number_defined == 0 && !camera_serial_number.empty()) {
 			// Try in IFD0 for Windows Explorer compatibility
 			entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_BODY_SERIAL_NUMBER);
