@@ -26,6 +26,10 @@
 #define MAKE_STRING "Wassoc"
 #endif
 
+// Compression helpers (from dng.cpp)
+#define COMPRESS_OFFSET 2048
+#define COMPRESS_MODE 1
+
 using namespace libcamera;
 
 static char TIFF_RGGB[4] = { 0, 1, 1, 2 };
@@ -219,36 +223,6 @@ static void copy_8bit(uint8_t const *src, StreamInfo const &info, uint8_t *dest,
 	}
 }
 
-static void uncompress(uint8_t const *src, StreamInfo const &info, uint16_t *dest)
-{
-	unsigned int buf_stride_pixels = (info.width + 7) & ~7;
-	for (unsigned int y = 0; y < info.height; ++y)
-	{
-		uint16_t *dp = dest + y * buf_stride_pixels;
-		uint8_t const *sp = src + y * info.stride;
-		for (unsigned int x = 0; x < info.width; x+=8)
-		{
-			if (COMPRESS_MODE & 1)
-			{
-				uint32_t w0 = 0, w1 = 0;
-				for (int b = 0; b < 4; ++b)
-					w0 |= (*sp++) << (b * 8);
-				for (int b = 0; b < 4; ++b)
-					w1 |= (*sp++) << (b * 8);
-				subBlockFunction(dp, w0);
-				subBlockFunction(dp + 1, w1);
-				for (int i = 0; i < 8; ++i, ++dp)
-					*dp = postprocess(*dp);
-			}
-			else
-			{
-				for (int i = 0; i < 8; ++i)
-					*dp++ = postprocess((*sp++) << 8);
-			}
-		}
-	}
-}
-
 // Matrix class (from dng.cpp)
 struct Matrix
 {
@@ -414,10 +388,6 @@ static void tiff_unmap(thandle_t handle, tdata_t base, toff_t size)
 // We'll need: unpack_10bit, unpack_12bit, unpack_12bit_to_8bit, unpack_12bit_to_10bit, 
 // unpack_16bit, copy_8bit, uncompress, and compression helpers
 
-// Compression helpers (from dng.cpp)
-#define COMPRESS_OFFSET 2048
-#define COMPRESS_MODE 1
-
 static uint16_t postprocess(uint16_t a)
 {
 	if (COMPRESS_MODE & 2)
@@ -497,6 +467,36 @@ static void subBlockFunction(uint16_t *d, uint32_t w)
 	d[2] = dequantize(q[1], qmode);
 	d[4] = dequantize(q[2], qmode);
 	d[6] = dequantize(q[3], qmode);
+}
+
+static void uncompress(uint8_t const *src, StreamInfo const &info, uint16_t *dest)
+{
+	unsigned int buf_stride_pixels = (info.width + 7) & ~7;
+	for (unsigned int y = 0; y < info.height; ++y)
+	{
+		uint16_t *dp = dest + y * buf_stride_pixels;
+		uint8_t const *sp = src + y * info.stride;
+		for (unsigned int x = 0; x < info.width; x+=8)
+		{
+			if (COMPRESS_MODE & 1)
+			{
+				uint32_t w0 = 0, w1 = 0;
+				for (int b = 0; b < 4; ++b)
+					w0 |= (*sp++) << (b * 8);
+				for (int b = 0; b < 4; ++b)
+					w1 |= (*sp++) << (b * 8);
+				subBlockFunction(dp, w0);
+				subBlockFunction(dp + 1, w1);
+				for (int i = 0; i < 8; ++i, ++dp)
+					*dp = postprocess(*dp);
+			}
+			else
+			{
+				for (int i = 0; i < 8; ++i)
+					*dp++ = postprocess((*sp++) << 8);
+			}
+		}
+	}
 }
 
 // Helper functions from dng.cpp - we need to include them
