@@ -68,6 +68,7 @@ static void exif_set_string(ExifEntry *entry, char const *s)
 // Create EXIF data from metadata (mimics mjpeg_encoder.cpp)
 static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, unsigned int &exif_len)
 {
+	std::cerr << "create_exif_data: Starting" << std::endl;
 	LOG(1, "create_exif_data: Starting");
 	exif_buffer = nullptr;
 	ExifData *exif = nullptr;
@@ -237,10 +238,17 @@ static void png_flush_memory(png_structp png_ptr)
 PngEncoder::PngEncoder(VideoOptions const *options)
 	: Encoder(options), abortEncode_(false), abortOutput_(false), index_(0)
 {
+	LOG(1, "PngEncoder::PngEncoder: Constructor entry");
 	options_ = options;
+	LOG(1, "PngEncoder::PngEncoder: Starting output thread");
 	output_thread_ = std::thread(&PngEncoder::outputThread, this);
+	LOG(1, "PngEncoder::PngEncoder: Starting encode threads");
 	for (int i = 0; i < NUM_ENC_THREADS; i++)
+	{
+		LOG(1, "PngEncoder::PngEncoder: Starting encode thread " << i);
 		encode_thread_[i] = std::thread(std::bind(&PngEncoder::encodeThread, this, i));
+	}
+	LOG(1, "PngEncoder::PngEncoder: Constructor complete");
 	LOG(2, "Opened PngEncoder");
 }
 
@@ -256,14 +264,21 @@ PngEncoder::~PngEncoder()
 
 void PngEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
 {
+	LOG(1, "EncodeBuffer: Entry");
 	std::lock_guard<std::mutex> lock(encode_mutex_);
+	LOG(1, "EncodeBuffer: Lock acquired");
 	EncodeItem item = { mem, info, timestamp_us, index_++, metadata };
+	LOG(1, "EncodeBuffer: Item created");
 	encode_queue_.push(item);
+	LOG(1, "EncodeBuffer: Item pushed to queue");
 	encode_cond_var_.notify_all();
+	LOG(1, "EncodeBuffer: Notified");
 }
 
 void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &buffer_len)
 {
+	std::cerr << "encodePNG: Entry" << std::endl;
+	LOG(1, "encodePNG: Entry");
 	png_structp png_ptr = NULL;
 	png_infop info_ptr = NULL;
 	PngMemoryBuffer mem_buffer = { nullptr, 0, 0 };
@@ -271,24 +286,35 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 
 	try
 	{
+		std::cerr << "encodePNG: In try block" << std::endl;
+		LOG(1, "encodePNG: In try block");
 		// Initialize memory buffer
+		LOG(1, "encodePNG: Calculating buffer capacity, width=" << item.info.width << ", height=" << item.info.height);
 		mem_buffer.capacity = item.info.width * item.info.height + 1024; // Initial estimate
+		LOG(1, "encodePNG: Allocating memory buffer, capacity=" << mem_buffer.capacity);
 		mem_buffer.data = (uint8_t *)malloc(mem_buffer.capacity);
 		if (!mem_buffer.data)
 			throw std::runtime_error("failed to allocate PNG memory buffer");
 		mem_buffer.size = 0;
+		LOG(1, "encodePNG: Memory buffer allocated");
 
 		// Create PNG structures
+		LOG(1, "encodePNG: Creating PNG write struct");
 		png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 		if (png_ptr == NULL)
 			throw std::runtime_error("failed to create png write struct");
+		LOG(1, "encodePNG: PNG write struct created");
 
+		LOG(1, "encodePNG: Creating PNG info struct");
 		info_ptr = png_create_info_struct(png_ptr);
 		if (info_ptr == NULL)
 			throw std::runtime_error("failed to create png info struct");
+		LOG(1, "encodePNG: PNG info struct created");
 
+		LOG(1, "encodePNG: Setting PNG error handling");
 		if (setjmp(png_jmpbuf(png_ptr)))
 			throw std::runtime_error("failed to set png error handling");
+		LOG(1, "encodePNG: PNG error handling set");
 
 		// Set image attributes
 		png_set_IHDR(png_ptr, info_ptr, item.info.width, item.info.height, 8, PNG_COLOR_TYPE_GRAY,
@@ -299,9 +325,13 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		png_set_compression_level(png_ptr, options_->Get().png_compression_level);
 
 		// Add EXIF metadata as PNG eXIf chunk (mimics mjpeg_encoder.cpp)
-		LOG(1, "encodePNG: Checking for lamp color metadata");
+		LOG(1, "encodePNG: About to check for lamp color metadata");
+		LOG(1, "encodePNG: item.metadata address: " << (void*)&item.metadata);
 		std::string temp_lamp_color;
-		if (item.metadata.Get(std::string("exif_data.lamp_color"), temp_lamp_color) == 0)
+		LOG(1, "encodePNG: Calling item.metadata.Get()");
+		auto get_result = item.metadata.Get(std::string("exif_data.lamp_color"), temp_lamp_color);
+		LOG(1, "encodePNG: Get() returned: " << get_result);
+		if (get_result == 0)
 		{
 			LOG(1, "encodePNG: Lamp color found, creating EXIF data");
 			uint8_t *exif_buffer = nullptr;
@@ -475,16 +505,25 @@ void PngEncoder::encodeThread(int num)
 		}
 
 		// Encode the buffer
+		LOG(1, "encodeThread: About to call encodePNG");
 		uint8_t *encoded_buffer = nullptr;
 		size_t buffer_len = 0;
 		auto start_time = std::chrono::high_resolution_clock::now();
 		try
 		{
+			LOG(1, "encodeThread: Calling encodePNG");
 			encodePNG(encode_item, encoded_buffer, buffer_len);
+			LOG(1, "encodeThread: encodePNG returned successfully");
 		}
 		catch (std::exception const &e)
 		{
-			LOG_ERROR("PNG encoding error: " << e.what());
+			LOG_ERROR("encodeThread: PNG encoding error: " << e.what());
+			// Continue to next frame
+			continue;
+		}
+		catch (...)
+		{
+			LOG_ERROR("encodeThread: PNG encoding error: Unknown exception");
 			// Continue to next frame
 			continue;
 		}
