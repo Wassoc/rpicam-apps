@@ -998,6 +998,12 @@ libcamera::Stream *RPiCamApp::GetMainStream() const
 		if (p.first == "viewfinder" || p.first == "still" || p.first == "video")
 			return p.second;
 	}
+	// If no main stream is found, and a raw stream is available, use that.
+	for (auto &p : streams_)
+	{
+		if (p.first == "raw")
+			return p.second;
+	}
 
 	return nullptr;
 }
