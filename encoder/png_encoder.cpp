@@ -119,12 +119,8 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		if (agDefined == 0)
 		{
 			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
-		}
-
-		float dg = 1.0;
-		auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
-		if (dgDefined == 0)
-		{
+			float dg = 1.0;
+			auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
 			float gain = ag * (dgDefined == 0 ? dg : 1.0);
 			exif_set_short(entry->data, exif_byte_order, (ExifShort)(100 * gain));
 		}
@@ -288,10 +284,10 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		std::string temp_lamp_color;
 		if (item.metadata.Get(std::string("exif_data.lamp_color"), temp_lamp_color) == 0)
 		{
+			uint8_t *exif_buffer = nullptr;
+			unsigned int exif_len = 0;
 			try
 			{
-				uint8_t *exif_buffer = nullptr;
-				unsigned int exif_len = 0;
 				create_exif_data(item.metadata, exif_buffer, exif_len);
 				if (exif_buffer && exif_len > 0)
 				{
@@ -305,23 +301,22 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 						exif_data_storage.resize(6 + exif_len);
 						memcpy(exif_data_storage.data(), exif_header, 6);
 						memcpy(exif_data_storage.data() + 6, exif_buffer, exif_len);
-						free(exif_buffer);
 					}
 					else
 					{
 						// Already has prefix, copy directly
 						exif_data_storage.resize(exif_len);
 						memcpy(exif_data_storage.data(), exif_buffer, exif_len);
-						free(exif_buffer);
 					}
-					
+					// Free the buffer now that we've copied it
+					free(exif_buffer);
+					exif_buffer = nullptr;
 					// Create unknown chunk for EXIF
 					png_unknown_chunk exif_chunk;
 					memcpy(exif_chunk.name, "eXIf", 5); // 5 bytes: "eXIf" + null terminator
 					exif_chunk.data = exif_data_storage.data();
 					exif_chunk.size = exif_data_storage.size();
 					exif_chunk.location = PNG_HAVE_IHDR;
-					
 					// Add the EXIF chunk
 					png_set_unknown_chunks(png_ptr, info_ptr, &exif_chunk, 1);
 					png_set_unknown_chunk_location(png_ptr, info_ptr, 0, PNG_HAVE_IHDR);
@@ -331,6 +326,12 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 			catch (std::exception const &e)
 			{
 				LOG_ERROR("Failed to create EXIF data: " << e.what());
+				// Ensure exif_buffer is freed even on error
+				if (exif_buffer)
+				{
+					free(exif_buffer);
+					exif_buffer = nullptr;
+				}
 				// Continue without EXIF
 			}
 		}
