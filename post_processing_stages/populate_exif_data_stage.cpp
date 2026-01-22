@@ -58,21 +58,38 @@ bool PopulateExifDataStage::Process(CompletedRequestPtr &completed_request)
 	if (!stream_)
 		return false;
 
-	auto exposure_time = completed_request->metadata.get(libcamera::controls::ExposureTime);
-	if (exposure_time)
-		completed_request->post_process_metadata.Set("exif_data.shutter_speed", (float)*exposure_time);
+	if (!completed_request || !completed_request.get())
+		return false;
 
-	auto analogue_gain = completed_request->metadata.get(libcamera::controls::AnalogueGain);
-	if (analogue_gain)
-		completed_request->post_process_metadata.Set("exif_data.analogue_gain", *analogue_gain);
+	try
+	{
+		// Access metadata safely
+		auto exposure_time = completed_request->metadata.get(libcamera::controls::ExposureTime);
+		if (exposure_time)
+			completed_request->post_process_metadata.Set("exif_data.shutter_speed", (float)*exposure_time);
 
-	auto digital_gain = completed_request->metadata.get(libcamera::controls::DigitalGain);
-	if (digital_gain)
-		completed_request->post_process_metadata.Set("exif_data.digital_gain", *digital_gain);
+		auto analogue_gain = completed_request->metadata.get(libcamera::controls::AnalogueGain);
+		if (analogue_gain)
+			completed_request->post_process_metadata.Set("exif_data.analogue_gain", *analogue_gain);
 
-	auto lux = completed_request->metadata.get(libcamera::controls::Lux);
-	if (lux)
-		completed_request->post_process_metadata.Set("exif_data.frame_lux", *lux);
+		auto digital_gain = completed_request->metadata.get(libcamera::controls::DigitalGain);
+		if (digital_gain)
+			completed_request->post_process_metadata.Set("exif_data.digital_gain", *digital_gain);
+
+		auto lux = completed_request->metadata.get(libcamera::controls::Lux);
+		if (lux)
+			completed_request->post_process_metadata.Set("exif_data.frame_lux", *lux);
+	}
+	catch (std::exception const &e)
+	{
+		LOG_ERROR("PopulateExifDataStage: Exception in Process: " << e.what());
+		return false;
+	}
+	catch (...)
+	{
+		LOG_ERROR("PopulateExifDataStage: Unknown exception in Process");
+		return false;
+	}
 
 	return false;
 }
