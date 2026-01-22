@@ -644,6 +644,8 @@ void RPiCamApp::ConfigureRawStream()
 
 	streams_["raw"] = configuration_->at(0).stream();
 
+	LOG(2, "Configuring post processor...");
+
 	post_processor_.Configure();
 
 	LOG(2, "Raw stream setup complete");
