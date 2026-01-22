@@ -48,8 +48,10 @@ void PopulateExifDataStage::Read(boost::property_tree::ptree const &params)
 
 void PopulateExifDataStage::Configure()
 {
+	LOG(2, "Configuring PopulateExifDataStage...");
 	stream_ = app_->GetMainStream();
 	info_ = app_->GetStreamInfo(stream_);
+	LOG(2, "PopulateExifDataStage configured");
 }
 
 
