@@ -15,99 +15,169 @@
 #include <algorithm>
 
 #include <png.h>
+#include <libexif/exif-data.h>
 #include <libcamera/control_ids.h>
 
 #include "png_encoder.hpp"
 #include "core/logging.hpp"
+#include "core/metadata.hpp"
+#include <ctime>
 
-// Helper function to write little-endian values
-// static void write_le16(uint8_t *buf, uint16_t value)
-// {
-// 	buf[0] = value & 0xFF;
-// 	buf[1] = (value >> 8) & 0xFF;
-// }
+#ifndef MAKE_STRING
+#define MAKE_STRING "Wassoc"
+#endif
 
-static void write_le32(uint8_t *buf, uint32_t value)
+static const ExifByteOrder exif_byte_order = EXIF_BYTE_ORDER_INTEL;
+
+// Helper function to create EXIF entry (same as MJPEG encoder)
+static ExifEntry *exif_create_tag(ExifData *exif, ExifIfd ifd, ExifTag tag)
 {
-	buf[0] = value & 0xFF;
-	buf[1] = (value >> 8) & 0xFF;
-	buf[2] = (value >> 16) & 0xFF;
-	buf[3] = (value >> 24) & 0xFF;
+	ExifEntry *entry = exif_content_get_entry(exif->ifd[ifd], tag);
+	if (entry)
+		return entry;
+	entry = exif_entry_new();
+	if (!entry)
+		throw std::runtime_error("failed to allocate EXIF entry");
+	entry->tag = tag;
+	exif_content_add_entry(exif->ifd[ifd], entry);
+	exif_entry_initialize(entry, entry->tag);
+	// Ensure data is allocated if entry_initialize didn't do it
+	if (entry->size > 0 && !entry->data)
+	{
+		entry->data = (unsigned char *)malloc(entry->size);
+		if (!entry->data)
+			throw std::runtime_error("failed to allocate EXIF entry data");
+		memset(entry->data, 0, entry->size);
+	}
+	exif_entry_unref(entry);
+	return entry;
 }
 
-// Build a minimal EXIF block with exposure time
-// EXIF structure: "Exif\0\0" + TIFF header + IFD with exposure time tag
-static std::vector<uint8_t> BuildExifBlock(double exposure_seconds)
+// Helper function to set EXIF string (same as MJPEG encoder)
+static void exif_set_string(ExifEntry *entry, char const *s)
 {
-	std::vector<uint8_t> exif;
+	if (entry->data)
+		free(entry->data);
+	entry->size = entry->components = strlen(s);
+	entry->data = (unsigned char *)strdup(s);
+	if (!entry->data)
+		throw std::runtime_error("failed to copy exif string");
+	entry->format = EXIF_FORMAT_ASCII;
+}
 
-    // EXIF header
-    exif.insert(exif.end(), { 'E','x','i','f',0,0 });
+// Create EXIF data from metadata using libexif (same as MJPEG encoder)
+static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, unsigned int &exif_len)
+{
+	exif_buffer = nullptr;
+	ExifData *exif = nullptr;
 
-    // TIFF: little-endian, version=42, offset=8
-    exif.insert(exif.end(), { 0x49,0x49, 0x2A,0x00, 0x08,0x00,0x00,0x00 });
+	try
+	{
+		exif = exif_data_new();
+		if (!exif)
+			throw std::runtime_error("failed to allocate EXIF data");
+		exif_data_set_byte_order(exif, exif_byte_order);
 
-    // ---- IFD0 ----
-    // 1 entry: ExifIFDPointer (0x8769)
-    exif.insert(exif.end(), { 0x01,0x00 }); // num entries = 1
+		std::string camera_serial_number = "Unknown";
+		auto camera_serial_number_defined = metadata.Get(std::string("exif_data.camera_serial_number"), camera_serial_number);
 
-    // Tag = 0x8769
-    exif.insert(exif.end(), { 0x69,0x87 });
+		// Add basic EXIF tags to IFD0 (main image directory) for better Windows compatibility
+		ExifEntry *entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MAKE);
+		exif_set_string(entry, MAKE_STRING);
+		// Add MODEL tag - Windows Explorer often looks for this
+		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MODEL);
+		exif_set_string(entry, std::string("Shadowgraph-v3 (SN: " + camera_serial_number + ")").c_str());
+		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_SOFTWARE);
+		exif_set_string(entry, "Shadowgraph-v3");
 
-    // Type = LONG (4)
-    exif.insert(exif.end(), { 0x04,0x00 });
+		// Add date/time to IFD0 for Windows Explorer compatibility
+		std::time_t raw_time;
+		std::time(&raw_time);
+		std::tm *time_info = std::localtime(&raw_time);
+		char time_string[32];
+		std::strftime(time_string, sizeof(time_string), "%Y:%m:%d %H:%M:%S", time_info);
+		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+		exif_set_string(entry, time_string);
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL);
+		exif_set_string(entry, time_string);
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_DIGITIZED);
+		exif_set_string(entry, time_string);
 
-    // Count = 1
-    exif.insert(exif.end(), { 0x01,0x00,0x00,0x00 });
+		// Add exposure time (shutter speed) - Windows Explorer expects this in EXIF sub-IFD
+		float exposure_time;
+		auto exposure_time_defined = metadata.Get(std::string("exif_data.shutter_speed"), exposure_time);
+		if (exposure_time_defined == 0)
+		{
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME);
+			ExifRational exposure = { (ExifLong)exposure_time, 1000000 };
+			exif_set_rational(entry->data, exif_byte_order, exposure);
+		}
 
-    // Offset to EXIF SubIFD (will be placed after IFD0)
-    uint32_t subifd_offset = 8 + 2 + 12 + 4; // TIFF header + IFD count + 1 entry + next-IFD offset
-    uint8_t tmp[4];
-    write_le32(tmp, subifd_offset);
-    exif.insert(exif.end(), tmp, tmp + 4);
+		// Add ISO (from gains) - Windows Explorer expects this in EXIF sub-IFD
+		float ag = 1.0;
+		auto agDefined = metadata.Get(std::string("exif_data.analogue_gain"), ag);
+		if (agDefined == 0)
+		{
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
+		}
 
-    // No more IFDs
-    exif.insert(exif.end(), { 0,0,0,0 });
+		float dg = 1.0;
+		auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
+		if (dgDefined == 0)
+		{
+			float gain = ag * (dgDefined == 0 ? dg : 1.0);
+			exif_set_short(entry->data, exif_byte_order, (ExifShort)(100 * gain));
+		}
 
-    // ---- EXIF SubIFD ----
-    // One tag: ExposureTime (0x829A)
-    exif.insert(exif.end(), { 0x01,0x00 }); // entries = 1
+		// Add fixed f-stop (aperture) value of f/16 to EXIF metadata
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FNUMBER);
+		// EXIF f-stop is a rational value: numerator=focal/aperture, denominator=1 (for whole numbers)
+		// For f/16, value is 16/1
+		ExifRational fnumber = { 16, 1 }; // f/16
+		exif_set_rational(entry->data, exif_byte_order, fnumber);
 
-    // Tag: ExposureTime
-    exif.insert(exif.end(), { 0x9A,0x82 });
+		// Add lamp color to EXIF metadata as user comment
+		std::string lamp_color = "Unknown";
+		auto lampDefined = metadata.Get(std::string("exif_data.lamp_color"), lamp_color);
+		if (lampDefined == 0) {
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT);
+			exif_set_string(entry, std::string("Lamp color: " + lamp_color).c_str());
+		}
 
-    // Type = RATIONAL (5)
-    exif.insert(exif.end(), { 0x05,0x00 });
+		// Set focal length to 12mm in EXIF
+		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH);
+		// EXIF focal length is a rational value, so 12/1 = 12mm
+		ExifRational focal_length = { 12, 1 };
+		exif_set_rational(entry->data, exif_byte_order, focal_length);
 
-    // Count = 1
-    exif.insert(exif.end(), { 0x01,0x00,0x00,0x00 });
+		// Add camera serial number to EXIF metadata
+		// Try IFD0 first for better Windows Explorer compatibility
+		if (camera_serial_number_defined == 0 && !camera_serial_number.empty()) {
+			// Try in IFD0 for Windows Explorer compatibility
+			entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_BODY_SERIAL_NUMBER);
+			exif_set_string(entry, camera_serial_number.c_str());
+			// Also set in EXIF sub-IFD for standard compliance
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_BODY_SERIAL_NUMBER);
+			exif_set_string(entry, camera_serial_number.c_str());
+		}
 
-    // Offset to rational data — after this SubIFD
-    uint32_t rational_offset = subifd_offset + 2 + 12 + 4; // entries + tag + next-IFD offset
-    write_le32(tmp, rational_offset);
-    exif.insert(exif.end(), tmp, tmp + 4);
-
-    // Next IFD = 0
-    exif.insert(exif.end(), { 0,0,0,0 });
-
-    // ---- ExposureTime rational ----
-    uint32_t num, den;
-
-    if (exposure_seconds < 1.0) {
-        den = uint32_t(1.0 / exposure_seconds + 0.5);
-        num = 1;
-    } else {
-        num = uint32_t(exposure_seconds * 1000000 + 0.5);
-        den = 1000000;
-    }
-
-    write_le32(tmp, num);
-    exif.insert(exif.end(), tmp, tmp+4);
-
-    write_le32(tmp, den);
-    exif.insert(exif.end(), tmp, tmp+4);
-
-    return exif;
+		// Create the EXIF data buffer
+		// libexif should automatically set up the EXIF sub-IFD pointer when we add tags to EXIF_IFD_EXIF
+		exif_data_save_data(exif, &exif_buffer, &exif_len);
+		if (!exif_buffer || exif_len == 0)
+			throw std::runtime_error("failed to save EXIF data");
+		LOG(2, "Created EXIF data, length: " << exif_len);
+		exif_data_unref(exif);
+		exif = nullptr;
+	}
+	catch (std::exception const &e)
+	{
+		if (exif)
+			exif_data_unref(exif);
+		if (exif_buffer)
+			free(exif_buffer);
+		throw;
+	}
 }
 
 // Structure to hold memory buffer for PNG encoding
@@ -172,9 +242,8 @@ PngEncoder::~PngEncoder()
 
 void PngEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &info, int64_t timestamp_us, Metadata const &metadata)
 {
-	(void)metadata; // PNG encoder uses options for metadata, not frame metadata
 	std::lock_guard<std::mutex> lock(encode_mutex_);
-	EncodeItem item = { mem, info, timestamp_us, index_++ };
+	EncodeItem item = { mem, info, timestamp_us, index_++, metadata };
 	encode_queue_.push(item);
 	encode_cond_var_.notify_all();
 }
@@ -215,61 +284,56 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		// Passing 0 to not compress the image
 		png_set_compression_level(png_ptr, options_->Get().png_compression_level);
 
-		// Add EXIF metadata as PNG eXIf chunk
-		auto exposure_time = options_->Get().shutter;
-		if (exposure_time)
+		// Add EXIF metadata as PNG eXIf chunk (similar to MJPEG encoder)
+		std::string temp_lamp_color;
+		if (item.metadata.Get(std::string("exif_data.lamp_color"), temp_lamp_color) == 0)
 		{
-			double exposure_seconds = exposure_time.get<std::chrono::microseconds>() / 1000000.0;
-			
-			// Build EXIF data block and store it to keep it alive
-			exif_data_storage = BuildExifBlock(exposure_seconds);
-			
-			// Create unknown chunk for EXIF
-			png_unknown_chunk exif_chunk;
-			memcpy(exif_chunk.name, "eXIf", 5); // 5 bytes: "eXIf" + null terminator
-			exif_chunk.data = exif_data_storage.data();
-			exif_chunk.size = exif_data_storage.size();
-			exif_chunk.location = PNG_HAVE_IHDR;
-			
-			// Add the EXIF chunk
-			png_set_unknown_chunks(png_ptr, info_ptr, &exif_chunk, 1);
-			png_set_unknown_chunk_location(png_ptr, info_ptr, 0, PNG_HAVE_IHDR);
+			try
+			{
+				// Create EXIF data using libexif
+				uint8_t *exif_buffer = nullptr;
+				unsigned int exif_len = 0;
+				create_exif_data(item.metadata, exif_buffer, exif_len);
+				if (exif_buffer && exif_len > 0)
+				{
+					// Check if libexif already includes "Exif\0\0" prefix
+					// libexif's exif_data_save_data returns data starting with TIFF header (0x4949 or 0x4D4D)
+					// PNG eXIf chunk requires "Exif\0\0" prefix before TIFF data
+					bool needs_prefix = (exif_len < 6 || memcmp(exif_buffer, "Exif", 4) != 0);
+					if (needs_prefix)
+					{
+						// PNG eXIf chunk format requires "Exif\0\0" prefix
+						// libexif's exif_data_save_data returns TIFF data without this prefix
+						// So we need to prepend it
+						exif_data_storage.resize(6 + exif_len);
+						memcpy(exif_data_storage.data(), "Exif\0\0", 6);
+						memcpy(exif_data_storage.data() + 6, exif_buffer, exif_len);
+						free(exif_buffer);
+					}
+					else
+					{
+						// Already has prefix, copy directly
+						exif_data_storage.assign(exif_buffer, exif_buffer + exif_len);
+						free(exif_buffer);
+					}
+					// Create unknown chunk for EXIF
+					png_unknown_chunk exif_chunk;
+					memcpy(exif_chunk.name, "eXIf", 5); // 5 bytes: "eXIf" + null terminator
+					exif_chunk.data = exif_data_storage.data();
+					exif_chunk.size = exif_data_storage.size();
+					exif_chunk.location = PNG_HAVE_IHDR;
+					// Add the EXIF chunk
+					png_set_unknown_chunks(png_ptr, info_ptr, &exif_chunk, 1);
+					png_set_unknown_chunk_location(png_ptr, info_ptr, 0, PNG_HAVE_IHDR);
+					LOG(2, "Added EXIF data to PNG, size: " << exif_data_storage.size());
+				}
+			}
+			catch (std::exception const &e)
+			{
+				LOG_ERROR("Failed to create EXIF data for PNG: " << e.what());
+				// Continue without EXIF
+			}
 		}
-			// Add shutter speed (exposure time)
-			// auto exposure_time = item.metadata.get(libcamera::controls::ExposureTime);
-			// if (exposure_time)
-			// {
-			// 	std::ostringstream oss;
-			// 	oss << std::fixed << std::setprecision(6) << (*exposure_time / 1000000.0) << " s";
-			// 	item.metadata_strings.push_back(oss.str());
-			// 	png_text text;
-			// 	text.compression = PNG_TEXT_COMPRESSION_NONE;
-			// 	text.key = (png_charp)"ExposureTime";
-			// 	text.text = (png_charp)item.metadata_strings.back().c_str();
-			// 	text.text_length = item.metadata_strings.back().length();
-			// 	text.itxt_length = 0;
-			// 	text.lang = nullptr;
-			// 	text.lang_key = nullptr;
-			// 	text_chunks.push_back(text);
-			// }
-
-			// // Add analogue gain
-			// auto ag = item.metadata.get(libcamera::controls::AnalogueGain);
-			// if (ag)
-			// {
-			// 	std::ostringstream oss;
-			// 	oss << std::fixed << std::setprecision(2) << *ag;
-			// 	item.metadata_strings.push_back(oss.str());
-			// 	png_text text;
-			// 	text.compression = PNG_TEXT_COMPRESSION_NONE;
-			// 	text.key = (png_charp)"AnalogueGain";
-			// 	text.text = (png_charp)item.metadata_strings.back().c_str();
-			// 	text.text_length = item.metadata_strings.back().length();
-			// 	text.itxt_length = 0;
-			// 	text.lang = nullptr;
-			// 	text.lang_key = nullptr;
-			// 	text_chunks.push_back(text);
-			// }
 
 		
 

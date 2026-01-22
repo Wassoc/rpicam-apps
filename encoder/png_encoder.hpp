@@ -49,6 +49,7 @@ private:
 		StreamInfo info;
 		int64_t timestamp_us;
 		uint64_t index;
+		Metadata metadata; // Optional metadata for EXIF
 	};
 	std::queue<EncodeItem> encode_queue_;
 	std::mutex encode_mutex_;
