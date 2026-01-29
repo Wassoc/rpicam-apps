@@ -231,6 +231,25 @@ private:
         return success;
     }
 
+    bool sendReadyCommand() {
+        bool success = false;
+        int retries = 0;
+        std::string command = "ready,";
+        if (fire_and_forget) {
+            sendCommand(command);
+            return true;
+        }
+        while (!success && retries < 3) {
+            sendCommand(command);
+            std::string response = readResponse();
+            if (response.find("OK") != std::string::npos) {
+                success = true;
+            }
+            retries++;
+        }
+        return success;
+    }
+
     bool enableIlluminationTrigger() {
         bool success = false;
         int retries = 0;
@@ -273,6 +292,7 @@ public:
             }
         }
 
+        sendReadyCommand();
         setChannelBrightness(0, red_brightness);
         setChannelBrightness(1, green_brightness);
         setChannelBrightness(2, blue_brightness);
