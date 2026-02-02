@@ -102,7 +102,7 @@ static void appendMetadataEntry(std::string const &metadataFilename, std::string
 			isEmptyObject = true;
 	}
 
-	std::string entry = "  \"" + key + "\": " + metadataJson.dump();
+	std::string entry = "  \"" + key + "\": " + metadataJson.dump(2);
 	std::string insertion = (isEmptyObject ? "\n" : ",\n") + entry + "\n}\n";
 
 	// Overwrite the final '}' with our insertion, then truncate any leftover bytes.
