@@ -40,6 +40,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	std::string metadataFilename = options_->Get().output_metadata_location;
 	libcamera::ControlList metadata;
 
+	// TODO: make this more efficient by not having to read the entire file into memory on every frame
 	if(!options_->Get().metadata.empty() && !metadata_queue_.empty() && !metadataFilename.empty()) {
 		metadata = metadata_queue_.front();
 		const libcamera::ControlIdMap *id_map = metadata.idMap();
@@ -50,7 +51,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 		metadataJson["metadata"] = metadataSummary;
 		currentObject[std::to_string(fileNameManager_.getImagesWritten())] = metadataJson;
 		if(isFirstFrame) {
-			std::ofstream outFile(metadataFilename);
+			std::ofstream outFile(metadataFilename, std::ios::out | std::ios::trunc);
 			if (!outFile.is_open())
 				throw std::runtime_error("failed to open metadata output file " + metadataFilename);
 			outFile << currentObject.dump(2);
