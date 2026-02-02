@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <string>
 #include <fstream>
+#include <mutex>
+#include <cctype>
 
 #include "file_output.hpp"
 #include "file_name_manager.hpp"
@@ -20,6 +22,102 @@
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
+
+namespace
+{
+std::mutex g_metadata_file_mutex;
+
+static std::streamoff findLastNonWhitespacePos(std::fstream &f, std::streamoff startPosInclusive)
+{
+	for (std::streamoff pos = startPosInclusive; pos >= 0; --pos)
+	{
+		f.clear();
+		f.seekg(pos, std::ios::beg);
+		char c = '\0';
+		if (!f.get(c))
+			continue;
+		if (!std::isspace(static_cast<unsigned char>(c)))
+			return pos;
+	}
+	return -1;
+}
+
+static void resetMetadataFile(std::string const &metadataFilename)
+{
+	std::ofstream out(metadataFilename, std::ios::out | std::ios::trunc | std::ios::binary);
+	if (!out.is_open())
+		throw std::runtime_error("failed to open metadata output file " + metadataFilename);
+	out << "{\n}\n";
+}
+
+static void appendMetadataEntry(std::string const &metadataFilename, std::string const &key, json const &metadataJson)
+{
+	// Keep the file as a single JSON object and append new entries by seeking to the final '}'.
+	// This avoids reading/parsing the whole file on every frame.
+	if (!fs::exists(metadataFilename) || fs::file_size(metadataFilename) == 0)
+		resetMetadataFile(metadataFilename);
+
+	std::fstream f(metadataFilename, std::ios::in | std::ios::out | std::ios::binary);
+	if (!f.is_open())
+		throw std::runtime_error("failed to open metadata output file " + metadataFilename);
+
+	std::streamoff fileSize = static_cast<std::streamoff>(fs::file_size(metadataFilename));
+	std::streamoff closeBracePos = findLastNonWhitespacePos(f, fileSize > 0 ? fileSize - 1 : 0);
+	if (closeBracePos < 0)
+	{
+		// Corrupt/empty file; reset and retry.
+		f.close();
+		resetMetadataFile(metadataFilename);
+		f.open(metadataFilename, std::ios::in | std::ios::out | std::ios::binary);
+		fileSize = static_cast<std::streamoff>(fs::file_size(metadataFilename));
+		closeBracePos = findLastNonWhitespacePos(f, fileSize - 1);
+	}
+
+	// Ensure the last non-whitespace character is a closing brace.
+	f.clear();
+	f.seekg(closeBracePos, std::ios::beg);
+	char lastChar = '\0';
+	f.get(lastChar);
+	if (lastChar != '}')
+	{
+		f.close();
+		resetMetadataFile(metadataFilename);
+		f.open(metadataFilename, std::ios::in | std::ios::out | std::ios::binary);
+		fileSize = static_cast<std::streamoff>(fs::file_size(metadataFilename));
+		closeBracePos = findLastNonWhitespacePos(f, fileSize - 1);
+		f.clear();
+		f.seekg(closeBracePos, std::ios::beg);
+		f.get(lastChar);
+	}
+
+	// Detect whether the object is currently empty: "{ ... }" where the previous non-whitespace is '{'.
+	std::streamoff prevPos = findLastNonWhitespacePos(f, closeBracePos - 1);
+	bool isEmptyObject = false;
+	if (prevPos >= 0)
+	{
+		f.clear();
+		f.seekg(prevPos, std::ios::beg);
+		char prevChar = '\0';
+		if (f.get(prevChar) && prevChar == '{')
+			isEmptyObject = true;
+	}
+
+	std::string entry = "  \"" + key + "\": " + metadataJson.dump();
+	std::string insertion = (isEmptyObject ? "\n" : ",\n") + entry + "\n}\n";
+
+	// Overwrite the final '}' with our insertion, then truncate any leftover bytes.
+	f.clear();
+	f.seekp(closeBracePos, std::ios::beg);
+	f.write(insertion.data(), static_cast<std::streamsize>(insertion.size()));
+	f.flush();
+
+	auto newEnd = f.tellp();
+	f.close();
+
+	if (newEnd != std::streampos(-1))
+		fs::resize_file(metadataFilename, static_cast<uintmax_t>(newEnd));
+}
+} // namespace
 
 FileOutput::FileOutput(VideoOptions const *options)
 	: Output(options), fp_(nullptr), file_start_time_ms_(0), fileNameManager_((Options*)options)
@@ -40,46 +138,19 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 	std::string metadataFilename = options_->Get().output_metadata_location;
 	libcamera::ControlList metadata;
 
-	// TODO: make this more efficient by not having to read the entire file into memory on every frame
 	if(!options_->Get().metadata.empty() && !metadata_queue_.empty() && !metadataFilename.empty()) {
 		metadata = metadata_queue_.front();
 		const libcamera::ControlIdMap *id_map = metadata.idMap();
-		json currentObject, metadataJson, metadataSummary;
+		json metadataJson, metadataSummary;
 		metadataJson["filename"] = getCurrentFileName();
 		for (auto const &[id, val] : metadata)
 			metadataSummary[id_map->at(id)->name()] = val.toString();
 		metadataJson["metadata"] = metadataSummary;
-		currentObject[std::to_string(fileNameManager_.getImagesWritten())] = metadataJson;
-		if(isFirstFrame) {
-			std::ofstream outFile(metadataFilename, std::ios::out | std::ios::trunc);
-			if (!outFile.is_open())
-				throw std::runtime_error("failed to open metadata output file " + metadataFilename);
-			outFile << currentObject.dump(2);
-			outFile.close();
-		} else {
-			// Read existing JSON file and merge new entry
-			json existingObject;
-			std::ifstream inFile(metadataFilename);
-			if (inFile.is_open()) {
-				try {
-					inFile >> existingObject;
-				} catch (const json::parse_error&) {
-					// If parsing fails, start with empty object
-					existingObject = json::object();
-				}
-				inFile.close();
-			}
-			// Merge the new entry into the existing object
-			for (auto& [key, value] : currentObject.items()) {
-				existingObject[key] = value;
-			}
-			// Write the complete updated JSON back to file
-			std::ofstream outFile(metadataFilename);
-			if (!outFile.is_open())
-				throw std::runtime_error("failed to open metadata output file " + metadataFilename);
-			outFile << existingObject.dump(2);
-			outFile.close();
-		}
+
+		std::lock_guard<std::mutex> lock(g_metadata_file_mutex);
+		if (isFirstFrame)
+			resetMetadataFile(metadataFilename);
+		appendMetadataEntry(metadataFilename, std::to_string(fileNameManager_.getImagesWritten()), metadataJson);
 	}
 
 }
