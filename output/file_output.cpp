@@ -36,7 +36,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 {
 	saveFile(mem, size, timestamp_us, flags);
 
-	bool isFirstFrame = getCurrentFileName().empty();
+	bool isFirstFrame = getImagesWritten() == 1;
 	std::string metadataFilename = options_->Get().output_metadata_location;
 	libcamera::ControlList metadata;
 
