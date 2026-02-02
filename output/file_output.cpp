@@ -150,7 +150,7 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 		std::lock_guard<std::mutex> lock(g_metadata_file_mutex);
 		if (isFirstFrame)
 			resetMetadataFile(metadataFilename);
-		appendMetadataEntry(metadataFilename, std::to_string(fileNameManager_.getImagesWritten()), metadataJson);
+		appendMetadataEntry(metadataFilename, std::to_string(fileNameManager_.getImagesWritten() - 1), metadataJson);
 	}
 
 }
