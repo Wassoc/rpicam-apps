@@ -151,8 +151,6 @@ void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint
 		if (isFirstFrame)
 			resetMetadataFile(metadataFilename);
 		appendMetadataEntry(metadataFilename, std::to_string(fileNameManager_.getImagesWritten() - 1), metadataJson);
-	} else {
-		LOG(1, "No Metadata found");
 	}
 
 }
