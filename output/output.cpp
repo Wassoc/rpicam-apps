@@ -117,7 +117,7 @@ Output *Output::Create(VideoOptions const *options)
 
 void Output::MetadataReady(libcamera::ControlList &metadata)
 {
-	if (options_->Get().metadata.empty()) {
+	if (options_->Get().metadata.empty())
 		return;
 	metadata_queue_.push(metadata);
 }
