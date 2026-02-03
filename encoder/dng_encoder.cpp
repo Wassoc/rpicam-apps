@@ -567,8 +567,8 @@ void DngEncoder::EncodeBuffer(int fd, size_t size, void *mem, StreamInfo const &
 
 void DngEncoder::encodeDNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &buffer_len)
 {
-	LOG(1, "Encoding DNG to memory buffer");
-	LOG(1, "Pixel format: " << item.info.pixel_format.toString());
+	LOG(2, "Encoding DNG to memory buffer");
+	LOG(2, "Pixel format: " << item.info.pixel_format.toString());
 	
 	// Check the Bayer format
 	auto it = bayer_formats.find(item.info.pixel_format);
