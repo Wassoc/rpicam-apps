@@ -67,7 +67,8 @@ private:
 
 	bool abortEncode_;
 	bool abortOutput_;
-	uint64_t index_;
+	uint64_t index_;       // input frame index (per EncodeBuffer call)
+	uint64_t output_index_; // sequential index for each RGB PNG output (0, 1, 2, ...)
 
 	// We only support a single encoding thread because frames must be
 	// grouped sequentially in triplets.

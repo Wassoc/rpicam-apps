@@ -218,7 +218,7 @@ static void png_flush_memory(png_structp png_ptr)
 }
 
 PngThreePhotoEncoder::PngThreePhotoEncoder(VideoOptions const *options)
-	: Encoder(options), abortEncode_(false), abortOutput_(false), index_(0)
+	: Encoder(options), abortEncode_(false), abortOutput_(false), index_(0), output_index_(0)
 {
 	options_ = options;
 	output_thread_ = std::thread(&PngThreePhotoEncoder::outputThread, this);
@@ -459,7 +459,8 @@ void PngThreePhotoEncoder::encodeThread(int num)
 		frames++;
 
 		// Push encoded buffer to output queue; each RGB PNG used 3 input frames.
-		OutputItem output_item = { encoded_buffer, buffer_len, group[0].timestamp_us, group[0].index, 3u };
+		// Use sequential output index (0,1,2,...) so outputThread can match in order.
+		OutputItem output_item = { encoded_buffer, buffer_len, group[0].timestamp_us, output_index_++, 3u };
 		group.clear();
 
 		std::lock_guard<std::mutex> lock(output_mutex_);
