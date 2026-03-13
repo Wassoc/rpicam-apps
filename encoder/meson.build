@@ -5,6 +5,7 @@ rpicam_app_src += files([
     'null_encoder.cpp',
     'png_encoder.cpp',
     'dng_encoder.cpp',
+    'png_three_photo_encoder.cpp',
 ])
 
 encoder_headers = files([
@@ -14,6 +15,7 @@ encoder_headers = files([
     'null_encoder.hpp',
     'png_encoder.hpp',
     'dng_encoder.hpp',
+    'png_three_photo_encoder.hpp',
 ])
 
 libav_dep_names = ['libavcodec', 'libavdevice', 'libavformat', 'libavutil', 'libswresample']
