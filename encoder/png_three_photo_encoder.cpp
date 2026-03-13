@@ -365,9 +365,12 @@ void PngThreePhotoEncoder::encodePNG(MonoFrameItem const &red,
 
 			for (unsigned int x = 0; x < width; ++x)
 			{
-				rgb_row[3 * x + 0] = r_row[x];
-				rgb_row[3 * x + 1] = g_row[x];
-				rgb_row[3 * x + 2] = b_row[x];
+				float red_value = (float)r_row[x] * options_->Get().red_gain;
+				float green_value = (float)g_row[x] * options_->Get().green_gain;
+				float blue_value = (float)b_row[x] * options_->Get().blue_gain;
+				rgb_row[3 * x + 0] = (uint8_t)red_value;
+				rgb_row[3 * x + 1] = (uint8_t)green_value;
+				rgb_row[3 * x + 2] = (uint8_t)blue_value;
 			}
 		}
 

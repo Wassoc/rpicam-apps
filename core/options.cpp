@@ -358,6 +358,12 @@ Options::Options()
 			"Fire and forget the lamp commands")
 		("camera-serial-number", value<std::string>(&v_->camera_serial_number)->default_value(""),
 			"Set the serial number of the camera (used for EXIF data)")
+		("green-gain", value<float>(&v_->green_gain)->default_value(1.0),
+			"Set the gain of the green channel")
+		("blue-gain", value<float>(&v_->blue_gain)->default_value(1.0),
+			"Set the gain of the blue channel")
+		("red-gain", value<float>(&v_->red_gain)->default_value(1.0),
+			"Set the gain of the red channel")
 		// End Wassoc custom options
 		;
 	// clang-format on

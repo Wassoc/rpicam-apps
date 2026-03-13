@@ -275,6 +275,9 @@ struct OptsInternal
 	std::string output_metadata_location;
 	bool fire_and_forget;
 	std::string camera_serial_number;
+	float green_gain;
+	float blue_gain;
+	float red_gain;
 	// End Wassoc custom options
 	
 	bool hflip_;
