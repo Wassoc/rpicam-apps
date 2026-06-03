@@ -174,27 +174,6 @@ private:
         return success;
     }
 
-    bool disableAllChannels() {
-        bool success = false;
-        int retries = 0;
-        std::string command = "r,";
-        if (fire_and_forget) {
-            sendCommand(command);
-            return true;
-        }
-        while (!success && retries < 3) {
-            sendCommand(command);
-            std::string response = readResponse();
-            if (response.find("OK") != std::string::npos) {
-                success = true;
-            } else {
-                success = false;
-            }
-            retries++;
-        }
-        return success;
-    }
-
     bool turnOffLamp() {
         bool success = false;
         int retries = 0;
@@ -376,6 +355,27 @@ public:
         }
         
         lamp_pattern_index++;
+    }
+
+    bool disableAllChannels() {
+        bool success = false;
+        int retries = 0;
+        std::string command = "r,";
+        if (fire_and_forget) {
+            sendCommand(command);
+            return true;
+        }
+        while (!success && retries < 3) {
+            sendCommand(command);
+            std::string response = readResponse();
+            if (response.find("OK") != std::string::npos) {
+                success = true;
+            } else {
+                success = false;
+            }
+            retries++;
+        }
+        return success;
     }
     
     void closeGpio() {
