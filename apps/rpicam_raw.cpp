@@ -51,12 +51,16 @@ protected:
 static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 {
 	unsigned int framesCaptured = 0;
+	bool everyNthFrameEnabled = false;
 	StreamInfo info;
 	VideoOptions const *options = app.GetOptions();
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
 
+	if (options->Get().every_nth_frame != 0) {
+		everyNthFrameEnabled = true;
+	}
 	if (lampHandler) {
 		lampHandler->setNextLampColor();
 	}
@@ -128,21 +132,32 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			app.StopEncoder();
 			return;
 		}
-		if (options->Get().capture_interval && options->Get().capture_interval > 0.0f) {
+		if (everyNthFrameEnabled) {
+			long long every_nth_frame = (long long)options->Get().every_nth_frame;
+			long long nth_frame = count % every_nth_frame;
+			if (nth_frame == every_nth_frame - 1) {
+				lampHandler->setNextLampColor();
+			}
+			if (nth_frame != 0) {
+				continue;
+			}
+		} else if (options->Get().capture_interval && options->Get().capture_interval > 0.0f) {
 			float time_since_last_capture = std::chrono::duration<float>(now - last_capture_time).count();
 			if (time_since_last_capture >= options->Get().capture_interval) {
 				last_capture_time = now;
 			} else {
 				continue;
 			}
-		} else if (options->Get().every_nth_frame > 1 && count % (long long)options->Get().every_nth_frame != 0) {
-			continue;
 		}
 		// Placing this after the interval check so we only update the lamp after the correct image has been captured
 		CompletedRequestPtr completed_request = std::get<CompletedRequestPtr>(msg.payload);
 		if (lampHandler) {
 			std::string currentLampColor = lampHandler->getCurrentLampColor();
-			lampHandler->setNextLampColor();
+			if (everyNthFrameEnabled) {
+				lampHandler->disableAllChannels();
+			} else {
+				lampHandler->setNextLampColor();
+			}
 			completed_request->post_process_metadata.Set("exif_data.lamp_color", currentLampColor);
 			completed_request->post_process_metadata.Set("exif_data.camera_serial_number", options->Get().camera_serial_number);
 		}
