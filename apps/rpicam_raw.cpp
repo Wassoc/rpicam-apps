@@ -58,7 +58,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
 
-	if (options->Get().every_nth_frame != 0) {
+	if (options->Get().every_nth_frame > 1) {
 		everyNthFrameEnabled = true;
 	}
 	if (lampHandler) {
