@@ -12,9 +12,9 @@ private:
     bool tx_serial_open;
     bool rx_serial_open;
     bool fire_and_forget;
-    unsigned int red_brightness;
-    unsigned int green_brightness;
-    unsigned int blue_brightness;
+    unsigned int lamp_zero_brightness;
+    unsigned int lamp_one_brightness;
+    unsigned int lamp_two_brightness;
     bool illumination_trigger_disabled;
     std::string tx_serial_device = "/dev/ttyAMA5";
     std::string rx_serial_device = "/dev/ttyAMA4";
@@ -270,14 +270,14 @@ private:
     }
 
 public:
-    GpioHandler(std::string lamp_pattern = "R", unsigned int r_brightness = 100, unsigned int g_brightness = 100, unsigned int b_brightness = 100, bool disable_illumination_trigger = false, bool should_fire_and_forget = false, speed_t baud_rate = B115200) {
+    GpioHandler(std::string lamp_pattern = "R", unsigned int brightness_zero = 100, unsigned int brightness_one = 100, unsigned int brightness_two = 100, bool disable_illumination_trigger = false, bool should_fire_and_forget = false, speed_t baud_rate = B115200) {
         tx_serial_fd = -1;
         rx_serial_fd = -1;
         tx_serial_open = false;
         rx_serial_open = false;
-        red_brightness = r_brightness;
-        green_brightness = g_brightness;
-        blue_brightness = b_brightness;
+        lamp_zero_brightness = brightness_zero;
+        lamp_one_brightness = brightness_one;
+        lamp_two_brightness = brightness_two;
         illumination_trigger_disabled = disable_illumination_trigger;
         fire_and_forget = should_fire_and_forget;
         // Initialize serial port
@@ -293,9 +293,9 @@ public:
         }
 
         sendReadyCommand();
-        setChannelBrightness(0, red_brightness);
-        setChannelBrightness(1, green_brightness);
-        setChannelBrightness(2, blue_brightness);
+        setChannelBrightness(0, lamp_zero_brightness);
+        setChannelBrightness(1, lamp_one_brightness);
+        setChannelBrightness(2, lamp_two_brightness);
         turnOffLamp();
         if (illumination_trigger_disabled) {
             disableIlluminationTrigger();
@@ -331,10 +331,12 @@ public:
         current_lamp_color = lamp_pattern_vec[lamp_pattern_index];
         for (unsigned int i = 0; i < current_lamp_color.size(); i++) {
             char letter = current_lamp_color[i];
-            if (letter == 'R' || letter == 'r') {
+            // Red for SG, L (laser) for glidercam
+            if (letter == 'R' || letter == 'r' || letter == 'L' || letter == 'l') {
                 active_channels += "0,";
                 wasColorSet = true;
-            } else if (letter == 'G' || letter == 'g') {
+            } else if (letter == 'G' || letter == 'g' || letter == 'S' || letter == 's') {
+                // Green for SG, S (strobe) for glidercam
                 active_channels += "1,";
                 wasColorSet = true;
             } else if (letter == 'B' || letter == 'b') {

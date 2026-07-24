@@ -331,11 +331,13 @@ Options::Options()
 		("disable-illumination-trigger", value<bool>(&v_->disable_illumination_trigger)->default_value(false)->implicit_value(true),
 			"Disable the illumination trigger")
 		("r-brightness", value<unsigned int>(&v_->r_brightness)->default_value(100),
-			"Set the brightness of the red channel")
+			"Set the brightness of the red channel (for SG)")
 		("g-brightness", value<unsigned int>(&v_->g_brightness)->default_value(100),
-			"Set the brightness of the green channel")
+			"Set the brightness of the green channel (for SG)")
 		("b-brightness", value<unsigned int>(&v_->b_brightness)->default_value(100),
-			"Set the brightness of the blue channel")
+			"Set the brightness of the blue channel (for SG)")
+		("s-brightness", value<unsigned int>(&v_->s_brightness)->default_value(0),
+			"Set the brightness of the strobe channel (for glidercam)")
 		("monochrome", value<bool>(&v_->monochrome)->default_value(false)->implicit_value(true),
 			"fixes awb, sets dng metadata to monochrome")
 		("capture-interval", value<float>(&v_->capture_interval)->default_value(0.0f),

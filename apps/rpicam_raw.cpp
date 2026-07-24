@@ -189,7 +189,13 @@ int main(int argc, char *argv[])
 			signal(SIGINT, signal_handler);
 			GpioHandler* lampHandler = nullptr;
 			if (!options->Get().without_lamp) {
-				lampHandler = new GpioHandler(options->Get().lamp_pattern, options->Get().r_brightness, options->Get().g_brightness, options->Get().b_brightness, options->Get().disable_illumination_trigger, options->Get().fire_and_forget);
+				unsigned int brightness_zero = options->Get().r_brightness;
+				unsigned int brightness_one = options->Get().g_brightness;
+				unsigned int brightness_two = options->Get().b_brightness;
+				if (options->Get().lamp_pattern.find("S") != std::string::npos || options->Get().lamp_pattern.find("s") != std::string::npos) {
+					brightness_one = options->Get().s_brightness;
+				}
+				lampHandler = new GpioHandler(options->Get().lamp_pattern, brightness_zero, brightness_one, brightness_two, options->Get().disable_illumination_trigger, options->Get().fire_and_forget);
 			}
 			// Disable any codec (h.264/libav) based operations.
 			options->Set().codec = "yuv420";
