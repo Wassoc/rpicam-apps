@@ -272,6 +272,7 @@ struct OptsInternal
 	unsigned int r_brightness;
 	unsigned int g_brightness;
 	unsigned int b_brightness;
+	unsigned int s_brightness;
 	std::string output_metadata_location;
 	bool fire_and_forget;
 	std::string camera_serial_number;
