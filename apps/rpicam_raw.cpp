@@ -29,6 +29,36 @@ static void signal_handler(int signal_number)
 	LOG(1, "Received signal " << signal_number);
 }
 
+bool isAutoExposureEnabled(VideoOptions const *options)
+{
+	return !options->Get().shutter && !options->Get().gain;
+}
+
+static void enableAutoExposure(RPiCamApp &app)
+{
+	libcamera::ControlList cl;
+	cl.set(libcamera::controls::ExposureTimeMode, libcamera::controls::ExposureTimeModeAuto);
+	cl.set(libcamera::controls::AnalogueGainMode, libcamera::controls::AnalogueGainModeAuto);
+	app.SetControls(cl);
+}
+
+static void fixExposureFromMetadata(RPiCamApp &app, CompletedRequestPtr const &completed_request)
+{
+	libcamera::ControlList cl;
+	cl.set(libcamera::controls::ExposureTimeMode, libcamera::controls::ExposureTimeModeManual);
+	cl.set(libcamera::controls::AnalogueGainMode, libcamera::controls::AnalogueGainModeManual);
+
+	auto exp = completed_request->metadata.get(libcamera::controls::ExposureTime);
+	if (exp)
+		cl.set(libcamera::controls::ExposureTime, *exp);
+
+	auto ag = completed_request->metadata.get(libcamera::controls::AnalogueGain);
+	if (ag)
+		cl.set(libcamera::controls::AnalogueGain, *ag);
+
+	app.SetControls(cl);
+}
+
 class LibcameraRaw : public RPiCamEncoder
 {
 public:
@@ -55,6 +85,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	StreamInfo info;
 	VideoOptions const *options = app.GetOptions();
 	bool illuminationTriggerDisabled = options->Get().disable_illumination_trigger;
+	bool autoExposureEnabled = isAutoExposureEnabled(options);
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
@@ -138,6 +169,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			long long nth_frame = count % every_nth_frame;
 			if (nth_frame == every_nth_frame - 1) {
 				lampHandler->setNextLampColor();
+				if (autoExposureEnabled) {
+					enableAutoExposure(app);
+				}
 				if (illuminationTriggerDisabled) {
 					lampHandler->turnOnLamp();
 				}
@@ -161,6 +195,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			std::string currentLampColor = lampHandler->getCurrentLampColor();
 			if (everyNthFrameEnabled) {
 				lampHandler->disableAllChannels();
+				if (autoExposureEnabled) {
+					fixExposureFromMetadata(app, completed_request);
+				}
 			} else {
 				lampHandler->setNextLampColor();
 			}
