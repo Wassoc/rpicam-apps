@@ -42,20 +42,11 @@ static void enableAutoExposure(RPiCamApp &app)
 	app.SetControls(cl);
 }
 
-static void fixExposureFromMetadata(RPiCamApp &app, CompletedRequestPtr const &completed_request)
+static void lockAutoExposure(RPiCamApp &app)
 {
 	libcamera::ControlList cl;
 	cl.set(libcamera::controls::ExposureTimeMode, libcamera::controls::ExposureTimeModeManual);
 	cl.set(libcamera::controls::AnalogueGainMode, libcamera::controls::AnalogueGainModeManual);
-
-	auto exp = completed_request->metadata.get(libcamera::controls::ExposureTime);
-	if (exp)
-		cl.set(libcamera::controls::ExposureTime, *exp);
-
-	auto ag = completed_request->metadata.get(libcamera::controls::AnalogueGain);
-	if (ag)
-		cl.set(libcamera::controls::AnalogueGain, *ag);
-
 	app.SetControls(cl);
 }
 
@@ -196,7 +187,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			if (everyNthFrameEnabled) {
 				lampHandler->disableAllChannels();
 				if (autoExposureEnabled) {
-					fixExposureFromMetadata(app, completed_request);
+					lockAutoExposure(app);
 				}
 			} else {
 				lampHandler->setNextLampColor();
