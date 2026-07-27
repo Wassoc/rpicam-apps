@@ -54,6 +54,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	bool everyNthFrameEnabled = false;
 	StreamInfo info;
 	VideoOptions const *options = app.GetOptions();
+	bool illuminationTriggerDisabled = options->Get().disable_illumination_trigger;
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
@@ -137,6 +138,11 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			long long nth_frame = count % every_nth_frame;
 			if (nth_frame == every_nth_frame - 1) {
 				lampHandler->setNextLampColor();
+				if (illuminationTriggerDisabled) {
+					lampHandler->turnOnLamp();
+				}
+			} else if (illuminationTriggerDisabled) {
+				lampHandler->turnOffLamp();
 			}
 			if (nth_frame != 0) {
 				continue;

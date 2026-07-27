@@ -174,44 +174,6 @@ private:
         return success;
     }
 
-    bool turnOffLamp() {
-        bool success = false;
-        int retries = 0;
-        std::string command = "off,";
-        if (fire_and_forget) {
-            sendCommand(command);
-            return true;
-        }
-        while (!success && retries < 3) {
-            sendCommand(command);
-            std::string response = readResponse();
-            if (response.find("OK") != std::string::npos) {
-                success = true;
-            }
-            retries++;
-        }
-        return success;
-    }
-
-    bool turnOnLamp() {
-        bool success = false;
-        int retries = 0;
-        std::string command = "on,";
-        if (fire_and_forget) {
-            sendCommand(command);
-            return true;
-        }
-        while (!success && retries < 3) {
-            sendCommand(command);
-            std::string response = readResponse();
-            if (response.find("OK") != std::string::npos) {
-                success = true;
-            }
-            retries++;
-        }
-        return success;
-    }
-
     bool disableIlluminationTrigger() {
         bool success = false;
         int retries = 0;
@@ -320,6 +282,44 @@ public:
 
     std::string getCurrentLampColor() {
         return current_lamp_color;
+    }
+
+    bool turnOffLamp() {
+        bool success = false;
+        int retries = 0;
+        std::string command = "off,";
+        if (fire_and_forget) {
+            sendCommand(command);
+            return true;
+        }
+        while (!success && retries < 3) {
+            sendCommand(command);
+            std::string response = readResponse();
+            if (response.find("OK") != std::string::npos) {
+                success = true;
+            }
+            retries++;
+        }
+        return success;
+    }
+
+    bool turnOnLamp() {
+        bool success = false;
+        int retries = 0;
+        std::string command = "on,";
+        if (fire_and_forget) {
+            sendCommand(command);
+            return true;
+        }
+        while (!success && retries < 3) {
+            sendCommand(command);
+            std::string response = readResponse();
+            if (response.find("OK") != std::string::npos) {
+                success = true;
+            }
+            retries++;
+        }
+        return success;
     }
 
     void setNextLampColor() {
