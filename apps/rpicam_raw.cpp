@@ -254,7 +254,6 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
-	auto last_capture_time = start_time;
 	libcamera::Stream *currentStream = nullptr;
 	std::string currentStreamName = "";
 	if (options->Get().force_jpeg) {
