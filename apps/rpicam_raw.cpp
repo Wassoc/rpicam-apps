@@ -69,8 +69,162 @@ protected:
 
 // The main even loop for the application.
 
+// static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
+// {
+// 	unsigned int AE_WARMUP_FRAMES = 10;
+// 	unsigned int AE_WARMUP_CADENCE_SECONDS = 20;
+// 	unsigned int ae_last_warmup_time = 0;
+// 	unsigned int framesCaptured = 0;
+// 	bool everyNthFrameEnabled = false;
+// 	StreamInfo info;
+// 	VideoOptions const *options = app.GetOptions();
+// 	bool illuminationTriggerDisabled = options->Get().disable_illumination_trigger;
+// 	bool autoExposureEnabled = isAutoExposureEnabled(options);
+// 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
+// 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
+// 	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
+
+// 	if (options->Get().every_nth_frame > 1) {
+// 		everyNthFrameEnabled = true;
+// 	}
+// 	if (lampHandler) {
+// 		lampHandler->setNextLampColor();
+// 	}
+// 	app.OpenCamera();
+// 	if (options->Get().force_jpeg) {
+// 		app.ConfigureVideo(RPiCamEncoder::FLAG_VIDEO_JPEG_COLOURSPACE);
+// 	} else if (options->Get().force_still) {
+// 		app.ConfigureStill(RPiCamApp::FLAG_STILL_NONE);
+// 	} else {
+// 		app.ConfigureRawStream();
+// 	}
+// 	app.StartEncoder();
+// 	app.StartCamera();
+// 	auto start_time = std::chrono::high_resolution_clock::now();
+// 	auto last_capture_time = start_time;
+// 	libcamera::Stream *currentStream = nullptr;
+// 	std::string currentStreamName = "";
+// 	if (options->Get().force_jpeg) {
+// 		currentStream = app.VideoStream();
+// 		currentStreamName = "JPEG";
+// 	} else if (options->Get().force_still) {
+// 		currentStream = app.StillStream();
+// 		currentStreamName = "STILL";
+// 	} else {
+// 		currentStream = app.RawStream();
+// 		currentStreamName = "RAW";
+// 	}
+
+// 	// TODO: handle timelapses where the requested framerate is less than one a second
+// 	for (long long count = -1; ; count++)
+// 	{
+// 		// Check for termination signals
+// 		if (signal_received == SIGTERM || signal_received == SIGINT) {
+// 			LOG(1, "Shutting down due to signal " << signal_received);
+// 			app.StopCamera();
+// 			app.StopEncoder();
+// 			return;
+// 		}
+// 		LibcameraRaw::Msg msg = app.Wait();
+
+// 		if (count == -1) {
+// 			if(autoExposureEnabled) {
+// 				ae_last_warmup_time = std::chrono::high_resolution_clock::now();
+// 			}
+// 			// Skip the first frame to allow the camera to warm up
+// 			continue;
+// 		}
+
+// 		if (msg.type == RPiCamApp::MsgType::Timeout)
+// 		{
+// 			LOG_ERROR("ERROR: Device timeout detected, attempting a restart!!!");
+// 			app.StopCamera();
+// 			app.StartCamera();
+// 			continue;
+// 		}
+// 		if (msg.type != LibcameraRaw::MsgType::RequestComplete)
+// 			throw std::runtime_error("unrecognised message!");
+// 		if (count == 0)
+// 		{
+// 			info = app.GetStreamInfo(currentStream);
+// 			output.get()->setStreamInfo(&info);
+// 			libcamera::StreamConfiguration const &cfg = currentStream->configuration();
+// 			LOG(1, currentStreamName << " stream: " << cfg.size.width << "x" << cfg.size.height << " stride " << cfg.stride << " format "
+// 								  << cfg.pixelFormat.toString());
+// 		}
+
+// 		LOG(2, currentStreamName << " frame " << count);
+// 		auto now = std::chrono::high_resolution_clock::now();
+// 		if (options->Get().timeout && (now - start_time) > options->Get().timeout.value)
+// 		{
+// 			app.StopCamera();
+// 			app.StopEncoder();
+// 			return;
+// 		}
+// 		if (everyNthFrameEnabled) {
+// 			long long every_nth_frame = (long long)options->Get().every_nth_frame;
+// 			long long nth_frame = count % every_nth_frame;
+// 			if (nth_frame == every_nth_frame - 1) {
+// 				lampHandler->setNextLampColor();
+// 				if (autoExposureEnabled) {
+// 					enableAutoExposure(app);
+// 				}
+// 				if (illuminationTriggerDisabled) {
+// 					lampHandler->turnOnLamp();
+// 				}
+// 			} else if (illuminationTriggerDisabled) {
+// 				lampHandler->turnOffLamp();
+// 			}
+// 			if (nth_frame != 0) {
+// 				continue;
+// 			}
+// 		} else if (options->Get().capture_interval && options->Get().capture_interval > 0.0f) {
+// 			float time_since_last_capture = std::chrono::duration<float>(now - last_capture_time).count();
+// 			if (time_since_last_capture >= options->Get().capture_interval) {
+// 				last_capture_time = now;
+// 			} else {
+// 				continue;
+// 			}
+// 		}
+// 		// Placing this after the interval check so we only update the lamp after the correct image has been captured
+// 		CompletedRequestPtr completed_request = std::get<CompletedRequestPtr>(msg.payload);
+// 		if (lampHandler) {
+// 			std::string currentLampColor = lampHandler->getCurrentLampColor();
+// 			if (everyNthFrameEnabled) {
+// 				lampHandler->disableAllChannels();
+// 				if (autoExposureEnabled) {
+// 					lockAutoExposure(app);
+// 				}
+// 			} else {
+// 				lampHandler->setNextLampColor();
+// 			}
+// 			completed_request->post_process_metadata.Set("exif_data.lamp_color", currentLampColor);
+// 			completed_request->post_process_metadata.Set("exif_data.camera_serial_number", options->Get().camera_serial_number);
+// 		}
+// 		if (!app.EncodeBuffer(completed_request, currentStream))
+// 		{
+// 			// Keep advancing our "start time" if we're still waiting to start recording (e.g.
+// 			// waiting for synchronisation with another camera).
+// 			start_time = now;
+// 		}
+// 		framesCaptured++;
+// 		if (options->Get().total_frames && framesCaptured == options->Get().total_frames) {
+// 			app.StopCamera();
+// 			app.StopEncoder();
+// 			return;
+// 		}
+// 	}
+// }
+
 static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 {
+	unsigned int AE_WARMUP_FRAMES = 10;
+	unsigned int AE_WARMUP_CADENCE_SECONDS = 20;
+	unsigned int ae_last_warmup_time = 0;
+	unsigned int ae_warmup_frames_captured = 0;
+	bool ae_warmup_in_progress = false;
+	unsigned int requests_ignored_per_capture = 0;
+	unsigned int requests_ignored_since_last_capture = 0;
 	unsigned int framesCaptured = 0;
 	bool everyNthFrameEnabled = false;
 	StreamInfo info;
@@ -83,6 +237,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 
 	if (options->Get().every_nth_frame > 1) {
 		everyNthFrameEnabled = true;
+		requests_ignored_per_capture = options->Get().every_nth_frame - 1;
 	}
 	if (lampHandler) {
 		lampHandler->setNextLampColor();
@@ -155,39 +310,53 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			app.StopEncoder();
 			return;
 		}
-		if (everyNthFrameEnabled) {
-			long long every_nth_frame = (long long)options->Get().every_nth_frame;
-			long long nth_frame = count % every_nth_frame;
-			if (nth_frame == every_nth_frame - 1) {
-				lampHandler->setNextLampColor();
-				if (autoExposureEnabled) {
-					enableAutoExposure(app);
+
+		if (autoExposureEnabled) {
+			if (ae_warmup_in_progress) {
+				ae_warmup_frames_captured++;
+				if (ae_warmup_frames_captured >= AE_WARMUP_FRAMES) {
+					ae_warmup_in_progress = false;
+					ae_warmup_frames_captured = 0;
+					lockAutoExposure(app);
+					if (lampHandler) {
+						lampHandler->setNextLampColor();
+					}
 				}
+				continue;
+			}
+			time_since_last_ae_warmup = std::chrono::duration<float>(now - ae_last_warmup_time).count();
+			if (time_since_last_ae_warmup >= AE_WARMUP_CADENCE_SECONDS) {
+				ae_last_warmup_time = now;
+				ae_warmup_in_progress = true;
+				enableAutoExposure(app);
+				if (lampHandler) {
+					lampHandler->enableStrobe();
+				}
+			}
+			// We are not in the AE warmup phase, so we can capture an image
+		}
+		if (requests_ignored_per_capture > 0 && requests_ignored_since_last_capture < requests_ignored_per_capture) {
+			// Next completed request will be saved to disk
+			if (requests_ignored_per_capture - requests_ignored_since_last_capture == 1) {
+				lampHandler->setNextLampColor();
 				if (illuminationTriggerDisabled) {
 					lampHandler->turnOnLamp();
 				}
 			} else if (illuminationTriggerDisabled) {
 				lampHandler->turnOffLamp();
 			}
-			if (nth_frame != 0) {
-				continue;
-			}
-		} else if (options->Get().capture_interval && options->Get().capture_interval > 0.0f) {
-			float time_since_last_capture = std::chrono::duration<float>(now - last_capture_time).count();
-			if (time_since_last_capture >= options->Get().capture_interval) {
-				last_capture_time = now;
-			} else {
-				continue;
-			}
+			requests_ignored_since_last_capture++;
+			continue;
 		}
-		// Placing this after the interval check so we only update the lamp after the correct image has been captured
+		// At this point, we are writing the latest request to disk
+		requests_ignored_since_last_capture = 0;
 		CompletedRequestPtr completed_request = std::get<CompletedRequestPtr>(msg.payload);
 		if (lampHandler) {
 			std::string currentLampColor = lampHandler->getCurrentLampColor();
 			if (everyNthFrameEnabled) {
 				lampHandler->disableAllChannels();
-				if (autoExposureEnabled) {
-					lockAutoExposure(app);
+				if (illuminationTriggerDisabled) {
+					lampHandler->turnOffLamp();
 				}
 			} else {
 				lampHandler->setNextLampColor();

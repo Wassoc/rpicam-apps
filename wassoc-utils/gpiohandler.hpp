@@ -359,6 +359,13 @@ public:
         lamp_pattern_index++;
     }
 
+    void enableStrobe() {
+        setActiveChannels("1,");
+        if (illumination_trigger_disabled) {
+            turnOnLamp();
+        }
+    }
+
     bool disableAllChannels() {
         bool success = false;
         int retries = 0;
