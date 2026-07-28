@@ -220,7 +220,8 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 {
 	unsigned int AE_WARMUP_FRAMES = 10;
 	unsigned int AE_WARMUP_CADENCE_SECONDS = 20;
-	unsigned int ae_last_warmup_time = 0;
+	auto ae_last_warmup_time = std::chrono::high_resolution_clock::now();
+	float time_since_last_ae_warmup = 0.0f;
 	unsigned int ae_warmup_frames_captured = 0;
 	bool ae_warmup_in_progress = false;
 	unsigned int requests_ignored_per_capture = 0;
