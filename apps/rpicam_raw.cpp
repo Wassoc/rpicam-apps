@@ -36,7 +36,7 @@ bool isAutoExposureEnabled(VideoOptions const *options)
 
 static void enableAutoExposure(RPiCamApp &app)
 {
-	constexpr int64_t frame_time = 1000000 / 20; // 50,000 us = 20 fps
+	constexpr int64_t frame_time = 1000000 / 60; // 50,000 us = 20 fps
 	libcamera::ControlList cl;
 	cl.set(libcamera::controls::ExposureTimeMode, libcamera::controls::ExposureTimeModeAuto);
 	cl.set(libcamera::controls::AnalogueGainMode, libcamera::controls::AnalogueGainModeAuto);
