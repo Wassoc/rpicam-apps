@@ -34,16 +34,16 @@ bool isAutoExposureEnabled(VideoOptions const *options)
 	return !options->Get().shutter && !options->Get().gain;
 }
 
-static void enableAutoExposure(RPiCamApp &app)
-{
-	// constexpr int64_t frame_time = 1000000 / 20; // 50,000 us = 20 fps
-	libcamera::ControlList cl;
-	cl.set(libcamera::controls::ExposureTimeMode, libcamera::controls::ExposureTimeModeAuto);
-	cl.set(libcamera::controls::AnalogueGainMode, libcamera::controls::AnalogueGainModeAuto);
-	// cl.set(libcamera::controls::FrameDurationLimits,
-	// 	   libcamera::Span<const int64_t, 2>({ frame_time, frame_time }));
-	app.SetControls(cl);
-}
+// static void enableAutoExposure(RPiCamApp &app)
+// {
+// 	// constexpr int64_t frame_time = 1000000 / 20; // 50,000 us = 20 fps
+// 	libcamera::ControlList cl;
+// 	cl.set(libcamera::controls::ExposureTimeMode, libcamera::controls::ExposureTimeModeAuto);
+// 	cl.set(libcamera::controls::AnalogueGainMode, libcamera::controls::AnalogueGainModeAuto);
+// 	// cl.set(libcamera::controls::FrameDurationLimits,
+// 	// 	   libcamera::Span<const int64_t, 2>({ frame_time, frame_time }));
+// 	app.SetControls(cl);
+// }
 
 static void lockAutoExposure(RPiCamApp &app)
 {
@@ -225,9 +225,9 @@ protected:
 static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 {
 	unsigned int AE_WARMUP_FRAMES = 15;
-	unsigned int AE_WARMUP_CADENCE_SECONDS = 20;
-	auto ae_last_warmup_time = std::chrono::high_resolution_clock::now();
-	float time_since_last_ae_warmup = 0.0f;
+	// unsigned int AE_WARMUP_CADENCE_SECONDS = 20;
+	// auto ae_last_warmup_time = std::chrono::high_resolution_clock::now();
+	// float time_since_last_ae_warmup = 0.0f;
 	unsigned int ae_warmup_frames_captured = 0;
 	bool ae_warmup_in_progress = true;
 	unsigned int requests_ignored_per_capture = 0;
