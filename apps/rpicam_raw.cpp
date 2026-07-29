@@ -340,6 +340,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 				if (lampHandler) {
 					lampHandler->enableStrobe();
 				}
+				continue;
 			}
 			// We are not in the AE warmup phase, so we can capture an image
 		}
