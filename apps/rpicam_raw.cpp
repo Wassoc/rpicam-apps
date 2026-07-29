@@ -224,12 +224,12 @@ protected:
 
 static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 {
-	unsigned int AE_WARMUP_FRAMES = 10;
+	unsigned int AE_WARMUP_FRAMES = 15;
 	unsigned int AE_WARMUP_CADENCE_SECONDS = 20;
 	auto ae_last_warmup_time = std::chrono::high_resolution_clock::now();
 	float time_since_last_ae_warmup = 0.0f;
 	unsigned int ae_warmup_frames_captured = 0;
-	bool ae_warmup_in_progress = false;
+	bool ae_warmup_in_progress = true;
 	unsigned int requests_ignored_per_capture = 0;
 	unsigned int requests_ignored_since_last_capture = 0;
 	unsigned int framesCaptured = 0;
@@ -320,7 +320,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 		if (autoExposureEnabled) {
 			if (ae_warmup_in_progress) {
 				ae_warmup_frames_captured++;
-				if (AE_WARMUP_FRAMES - ae_warmup_frames_captured == 3) {
+				if (AE_WARMUP_FRAMES - ae_warmup_frames_captured == 5) {
 					lockAutoExposure(app);
 				}
 				if (ae_warmup_frames_captured >= AE_WARMUP_FRAMES) {
@@ -332,16 +332,16 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 				}
 				continue;
 			}
-			time_since_last_ae_warmup = std::chrono::duration<float>(now - ae_last_warmup_time).count();
-			if (time_since_last_ae_warmup >= AE_WARMUP_CADENCE_SECONDS) {
-				ae_last_warmup_time = now;
-				ae_warmup_in_progress = true;
-				enableAutoExposure(app);
-				if (lampHandler) {
-					lampHandler->enableStrobe();
-				}
-				continue;
-			}
+			// time_since_last_ae_warmup = std::chrono::duration<float>(now - ae_last_warmup_time).count();
+			// if (time_since_last_ae_warmup >= AE_WARMUP_CADENCE_SECONDS) {
+			// 	ae_last_warmup_time = now;
+			// 	ae_warmup_in_progress = true;
+			// 	enableAutoExposure(app);
+			// 	if (lampHandler) {
+			// 		lampHandler->enableStrobe();
+			// 	}
+			// 	continue;
+			// }
 			// We are not in the AE warmup phase, so we can capture an image
 		}
 		if (requests_ignored_per_capture > 0 && requests_ignored_since_last_capture < requests_ignored_per_capture) {
