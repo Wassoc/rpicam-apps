@@ -34,6 +34,12 @@ bool isAutoExposureEnabled(VideoOptions const *options)
 	return !options->Get().shutter && !options->Get().gain;
 }
 
+bool isAutoWhiteBalanceEnabled(VideoOptions const *options)
+{
+	// Non-zero --awbgains put the AWB algorithm straight into manual mode, so there is
+	// nothing for us to converge and lock.
+	return !options->Get().awb_gain_r || !options->Get().awb_gain_b;
+}
 // static void enableAutoExposure(RPiCamApp &app)
 // {
 // 	// constexpr int64_t frame_time = 1000000 / 20; // 50,000 us = 20 fps
@@ -53,6 +59,24 @@ static void lockAutoExposure(RPiCamApp &app)
 	cl.set(libcamera::controls::AnalogueGainMode, libcamera::controls::AnalogueGainModeManual);
 	// cl.set(libcamera::controls::FrameDurationLimits,
 	// 	   libcamera::Span<const int64_t, 2>({ frame_time, frame_time }));
+	app.SetControls(cl);
+}
+
+static void lockAutoWhiteBalance(RPiCamApp &app, CompletedRequestPtr const &completed_request)
+{
+	// AwbMode only narrows the colour temperature range the algorithm searches, it never stops it
+	// running, so the only way to freeze the white balance is to hand back the gains the algorithm
+	// has already converged on.
+	auto gains = completed_request->metadata.get(libcamera::controls::ColourGains);
+	if (!gains || (*gains)[0] == 0.0f || (*gains)[1] == 0.0f)
+	{
+		LOG_ERROR("WARNING: no colour gains reported, leaving AWB running");
+		return;
+	}
+	LOG(1, "Locking AWB to colour gains red " << (*gains)[0] << " blue " << (*gains)[1]);
+	libcamera::ControlList cl;
+	cl.set(libcamera::controls::AwbEnable, false);
+	cl.set(libcamera::controls::ColourGains, libcamera::Span<const float, 2>({ (*gains)[0], (*gains)[1] }));
 	app.SetControls(cl);
 }
 
@@ -238,6 +262,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	VideoOptions const *options = app.GetOptions();
 	bool illuminationTriggerDisabled = options->Get().disable_illumination_trigger;
 	bool autoExposureEnabled = isAutoExposureEnabled(options);
+	bool autoWhiteBalanceEnabled = isAutoWhiteBalanceEnabled(options);
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
@@ -317,11 +342,14 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			return;
 		}
 
-		if (autoExposureEnabled) {
+		if (autoExposureEnabled || autoWhiteBalanceEnabled) {
 			if (ae_warmup_in_progress) {
 				ae_warmup_frames_captured++;
 				if (AE_WARMUP_FRAMES - ae_warmup_frames_captured == 5) {
-					lockAutoExposure(app);
+					if (autoExposureEnabled)
+						lockAutoExposure(app);
+					if (autoWhiteBalanceEnabled)
+						lockAutoWhiteBalance(app, std::get<CompletedRequestPtr>(msg.payload));
 				}
 				if (ae_warmup_frames_captured >= AE_WARMUP_FRAMES) {
 					ae_warmup_in_progress = false;
