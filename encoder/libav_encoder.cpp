@@ -19,6 +19,7 @@
 
 #include "libav_encoder.hpp"
 #include "core/metadata.hpp"
+#include "output/file_name_manager.hpp"
 
 namespace {
 
@@ -378,6 +379,17 @@ LibAvEncoder::LibAvEncoder(VideoOptions const *options, StreamInfo const &info)
 		av_log_set_level(AV_LOG_VERBOSE);
 
 	initVideoCodec(options, info);
+
+	// Container formats (e.g. mp4) are opened by libav itself, not FileOutput.
+	// Resolve the path here so --parent-directory / --output-directory work for rpicam-vid.
+	// Elementary streams still go through FileOutput, which has its own FileNameManager.
+	if (!elementary_stream_ && FileNameManager::isLocalFileOutput(output_file_))
+	{
+		FileNameManager file_names(options);
+		output_file_ = file_names.getNextFileName();
+		LOG(1, "libav: output file " << output_file_);
+	}
+
 	if (options->Get().libav_audio)
 	{
 		initAudioInCodec(options, info);

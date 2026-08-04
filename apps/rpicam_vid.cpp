@@ -13,6 +13,7 @@
 
 #include "core/rpicam_encoder.hpp"
 #include "output/output.hpp"
+#include "wassoc-utils/gpiohandler.hpp"
 
 using namespace std::placeholders;
 
@@ -62,12 +63,15 @@ static int get_colourspace_flags(std::string const &codec)
 
 // The main even loop for the application.
 
-static void event_loop(RPiCamEncoder &app)
+static void event_loop(RPiCamEncoder &app, GpioHandler *lampHandler)
 {
 	VideoOptions const *options = app.GetOptions();
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
+
+	if (lampHandler)
+		lampHandler->setNextLampColor();
 
 	app.OpenCamera();
 	app.ConfigureVideo(get_colourspace_flags(options->Get().codec));
@@ -125,7 +129,6 @@ static void event_loop(RPiCamEncoder &app)
 			start_time = now;
 			count = 0; // reset the "frames encoded" counter too
 		}
-		app.ShowPreview(completed_request, app.VideoStream());
 	}
 }
 
@@ -137,10 +140,30 @@ int main(int argc, char *argv[])
 		VideoOptions *options = app.GetOptions();
 		if (options->Parse(argc, argv))
 		{
+			options->Set().nopreview = true;
+
+			GpioHandler *lampHandler = nullptr;
+			if (!options->Get().without_lamp)
+			{
+				unsigned int brightness_zero = options->Get().r_brightness;
+				unsigned int brightness_one = options->Get().g_brightness;
+				unsigned int brightness_two = options->Get().b_brightness;
+				if (options->Get().lamp_pattern.find("S") != std::string::npos ||
+					options->Get().lamp_pattern.find("s") != std::string::npos)
+				{
+					brightness_one = options->Get().s_brightness;
+				}
+				lampHandler = new GpioHandler(options->Get().lamp_pattern, brightness_zero, brightness_one,
+											  brightness_two, options->Get().disable_illumination_trigger,
+											  options->Get().fire_and_forget);
+			}
+
 			if (options->Get().verbose >= 2)
 				options->Get().Print();
 
-			event_loop(app);
+			event_loop(app, lampHandler);
+			if (lampHandler)
+				delete lampHandler;
 		}
 	}
 	catch (std::exception const &e)
