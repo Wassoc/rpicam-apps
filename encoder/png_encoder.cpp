@@ -256,9 +256,9 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 	png_infop info_ptr = NULL;
 	PngMemoryBuffer mem_buffer = { nullptr, 0, 0 };
 	std::vector<uint8_t> exif_data_storage; // Store EXIF data to keep it alive
-	const bool is_bgr = item.info.pixel_format == libcamera::formats::BGR888;
+	const volatile bool is_bgr = item.info.pixel_format == libcamera::formats::BGR888;
 	const bool is_rgb = item.info.pixel_format == libcamera::formats::RGB888 || is_bgr;
-	const int png_color_type = is_rgb ? PNG_COLOR_TYPE_RGB : PNG_COLOR_TYPE_GRAY;
+	const volatile int png_color_type = is_rgb ? PNG_COLOR_TYPE_RGB : PNG_COLOR_TYPE_GRAY;
 
 	try
 	{
