@@ -124,6 +124,7 @@ public:
 	static constexpr unsigned int FLAG_VIDEO_NONE = 0;
 	static constexpr unsigned int FLAG_VIDEO_RAW = 1; // request raw image stream
 	static constexpr unsigned int FLAG_VIDEO_JPEG_COLOURSPACE = 2; // force JPEG colour space
+	static constexpr unsigned int FLAG_VIDEO_RGB = 4; // request RGB888 from the ISP
 
 	RPiCamApp(std::unique_ptr<Options> const opts = nullptr);
 	virtual ~RPiCamApp();

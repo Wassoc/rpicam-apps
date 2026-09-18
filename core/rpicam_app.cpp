@@ -548,7 +548,7 @@ void RPiCamApp::ConfigureVideo(unsigned int flags)
 
 	// Now we get to override any of the default settings from the options_->Get().
 	StreamConfiguration &cfg = configuration_->at(0);
-	cfg.pixelFormat = libcamera::formats::YUV420;
+	cfg.pixelFormat = (flags & FLAG_VIDEO_RGB) ? libcamera::formats::RGB888 : libcamera::formats::YUV420;
 	cfg.bufferCount = 6; // 6 buffers is better than 4
 	if (options_->Get().buffer_count > 0)
 		cfg.bufferCount = options_->Get().buffer_count;
@@ -556,7 +556,9 @@ void RPiCamApp::ConfigureVideo(unsigned int flags)
 		cfg.size.width = options_->Get().width;
 	if (options_->Get().height)
 		cfg.size.height = options_->Get().height;
-	if (flags & FLAG_VIDEO_JPEG_COLOURSPACE)
+	if (flags & FLAG_VIDEO_RGB)
+		cfg.colorSpace = libcamera::ColorSpace::Sycc;
+	else if (flags & FLAG_VIDEO_JPEG_COLOURSPACE)
 		cfg.colorSpace = libcamera::ColorSpace::Sycc;
 	else if (cfg.size.width >= 1280 || cfg.size.height >= 720)
 		cfg.colorSpace = libcamera::ColorSpace::Rec709;

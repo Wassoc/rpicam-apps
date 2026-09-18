@@ -17,6 +17,7 @@
 #include <png.h>
 #include <libexif/exif-data.h>
 #include <libcamera/control_ids.h>
+#include <libcamera/formats.h>
 
 #include "png_encoder.hpp"
 #include "core/logging.hpp"
@@ -255,11 +256,20 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 	png_infop info_ptr = NULL;
 	PngMemoryBuffer mem_buffer = { nullptr, 0, 0 };
 	std::vector<uint8_t> exif_data_storage; // Store EXIF data to keep it alive
+	const bool is_bgr = item.info.pixel_format == libcamera::formats::BGR888;
+	const bool is_rgb = item.info.pixel_format == libcamera::formats::RGB888 || is_bgr;
+	const int png_color_type = is_rgb ? PNG_COLOR_TYPE_RGB : PNG_COLOR_TYPE_GRAY;
 
 	try
 	{
+		if (is_rgb)
+			LOG(2, "Encoding colour PNG from ISP format " << item.info.pixel_format.toString());
+		else if (options_->Get().png_color)
+			throw std::runtime_error("colour PNG expected RGB888/BGR888 from ISP, got " +
+									 item.info.pixel_format.toString());
+
 		// Initialize memory buffer
-		mem_buffer.capacity = item.info.width * item.info.height + 1024; // Initial estimate
+		mem_buffer.capacity = item.info.width * item.info.height * (is_rgb ? 3 : 1) + 1024;
 		mem_buffer.data = (uint8_t *)malloc(mem_buffer.capacity);
 		if (!mem_buffer.data)
 			throw std::runtime_error("failed to allocate PNG memory buffer");
@@ -278,7 +288,7 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 			throw std::runtime_error("failed to set png error handling");
 
 		// Set image attributes
-		png_set_IHDR(png_ptr, info_ptr, item.info.width, item.info.height, 8, PNG_COLOR_TYPE_GRAY,
+		png_set_IHDR(png_ptr, info_ptr, item.info.width, item.info.height, 8, png_color_type,
 					 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_BASE);
 		// These settings get us most of the compression, but are much faster.
 		png_set_filter(png_ptr, PNG_FILTER_TYPE_BASE, PNG_FILTER_NONE);
@@ -347,7 +357,7 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		// Use custom write function to write to memory
 		png_set_write_fn(png_ptr, &mem_buffer, png_write_to_memory, png_flush_memory);
 		png_set_rows(png_ptr, info_ptr, row_ptrs);
-		png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+		png_write_png(png_ptr, info_ptr, is_bgr ? PNG_TRANSFORM_BGR : PNG_TRANSFORM_IDENTITY, NULL);
 
 		// Transfer ownership of the buffer
 		encoded_buffer = mem_buffer.data;

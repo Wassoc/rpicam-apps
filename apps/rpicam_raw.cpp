@@ -87,7 +87,7 @@ public:
 protected:
 	// Force the use of "null" encoder.
 	void createEncoder() {
-		if (GetOptions()->Get().force_png) {
+		if (GetOptions()->Get().force_png || GetOptions()->Get().png_color) {
 			encoder_ = std::unique_ptr<Encoder>(new PngEncoder(GetOptions()));
 		} else if (GetOptions()->Get().force_jpeg || GetOptions()->Get().force_still) {
 			encoder_ = std::unique_ptr<Encoder>(new MjpegEncoder(GetOptions()));
@@ -279,6 +279,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 		app.ConfigureVideo(RPiCamEncoder::FLAG_VIDEO_JPEG_COLOURSPACE);
 	} else if (options->Get().force_still) {
 		app.ConfigureStill(RPiCamApp::FLAG_STILL_NONE);
+	} else if (options->Get().png_color) {
+		// Ask the ISP for RGB888, which PNG can store without a colour conversion.
+		app.ConfigureVideo(RPiCamEncoder::FLAG_VIDEO_RGB);
 	} else {
 		app.ConfigureRawStream();
 	}
@@ -293,6 +296,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	} else if (options->Get().force_still) {
 		currentStream = app.StillStream();
 		currentStreamName = "STILL";
+	} else if (options->Get().png_color) {
+		currentStream = app.VideoStream();
+		currentStreamName = "PNG_RGB";
 	} else {
 		currentStream = app.RawStream();
 		currentStreamName = "RAW";
