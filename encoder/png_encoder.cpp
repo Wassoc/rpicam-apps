@@ -256,8 +256,10 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 	png_infop info_ptr = NULL;
 	PngMemoryBuffer mem_buffer = { nullptr, 0, 0 };
 	std::vector<uint8_t> exif_data_storage; // Store EXIF data to keep it alive
-	const volatile bool is_bgr = item.info.pixel_format == libcamera::formats::BGR888;
-	const bool is_rgb = item.info.pixel_format == libcamera::formats::RGB888 || is_bgr;
+	// libcamera follows DRM naming: RGB888 is [B,G,R] in memory, BGR888 is [R,G,B].
+	const volatile bool swap_red_blue = item.info.pixel_format == libcamera::formats::RGB888;
+	const bool is_rgb = item.info.pixel_format == libcamera::formats::RGB888 ||
+						item.info.pixel_format == libcamera::formats::BGR888;
 	const volatile int png_color_type = is_rgb ? PNG_COLOR_TYPE_RGB : PNG_COLOR_TYPE_GRAY;
 
 	try
@@ -357,7 +359,7 @@ void PngEncoder::encodePNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		// Use custom write function to write to memory
 		png_set_write_fn(png_ptr, &mem_buffer, png_write_to_memory, png_flush_memory);
 		png_set_rows(png_ptr, info_ptr, row_ptrs);
-		png_write_png(png_ptr, info_ptr, is_bgr ? PNG_TRANSFORM_BGR : PNG_TRANSFORM_IDENTITY, NULL);
+		png_write_png(png_ptr, info_ptr, swap_red_blue ? PNG_TRANSFORM_BGR : PNG_TRANSFORM_IDENTITY, NULL);
 
 		// Transfer ownership of the buffer
 		encoded_buffer = mem_buffer.data;
