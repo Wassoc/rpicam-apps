@@ -268,7 +268,8 @@ Options::Options()
 		("framerate", value<float>(&v_->framerate_)->default_value(-1.0),
 			"Set the fixed framerate for preview and video modes")
 		("denoise", value<std::string>(&v_->denoise)->default_value("auto"),
-			"Sets the Denoise operating mode: auto, off, cdn_off, cdn_fast, cdn_hq")
+			"Sets the Denoise operating mode: auto, off, fast, hq. cdn_off leaves spatial denoise on with "
+			"colour denoise off, and cdn_fast/cdn_hq are accepted synonyms for fast/hq")
 		("viewfinder-width", value<unsigned int>(&v_->viewfinder_width)->default_value(0),
 			"Width of viewfinder frames from the camera (distinct from the preview window size")
 		("viewfinder-height", value<unsigned int>(&v_->viewfinder_height)->default_value(0),

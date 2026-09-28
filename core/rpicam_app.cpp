@@ -1290,7 +1290,9 @@ void RPiCamApp::configureDenoise(const std::string &denoise_mode)
 		{ "off", NoiseReductionModeOff },
 		{ "cdn_off", NoiseReductionModeMinimal },
 		{ "cdn_fast", NoiseReductionModeFast },
-		{ "cdn_hq", NoiseReductionModeHighQuality }
+		{ "fast", NoiseReductionModeFast },
+		{ "cdn_hq", NoiseReductionModeHighQuality },
+		{ "hq", NoiseReductionModeHighQuality }
 	};
 	NoiseReductionModeEnum denoise;
 

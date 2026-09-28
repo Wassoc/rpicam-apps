@@ -443,9 +443,11 @@ int main(int argc, char *argv[])
 				}
 				lampHandler = new GpioHandler(options->Get().lamp_pattern, brightness_zero, brightness_one, brightness_two, options->Get().disable_illumination_trigger, options->Get().fire_and_forget);
 			}
-			// Disable any codec (h.264/libav) based operations.
 			options->Set().codec = "yuv420";
-			options->Set().denoise = "cdn_off";
+			// Raw capture configures the video pipeline, where "auto" resolves to cdn_fast. Keep
+			// colour denoise off unless a mode was explicitly requested.
+			if (options->Get().denoise == "auto")
+				options->Set().denoise = "cdn_off";
 			options->Set().nopreview = true;
 			if (options->Get().verbose >= 2)
 				options->Get().Print();
