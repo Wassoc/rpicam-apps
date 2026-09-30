@@ -724,7 +724,7 @@ void DngEncoder::encodeDNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		}
 		uint32_t white = (1 << bayer_format.bits) - 1;
 		toff_t offset_subifd = 0, offset_exififd = 0;
-		std::string unique_model = std::string(MAKE_STRING " shadowgraph-v3");
+		std::string unique_model = std::string("Glider-Cam");
 		
 		unsigned int thumbnailSizeMultiplier = 3;
 		// Thumbnail IFD
@@ -735,14 +735,14 @@ void DngEncoder::encodeDNG(EncodeItem &item, uint8_t *&encoded_buffer, size_t &b
 		TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 		TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
 		TIFFSetField(tif, TIFFTAG_MAKE, MAKE_STRING);
-		TIFFSetField(tif, TIFFTAG_MODEL, "shadowgraph-v3");
+		TIFFSetField(tif, TIFFTAG_MODEL, "Glider-Cam");
 		TIFFSetField(tif, TIFFTAG_DNGVERSION, "\001\001\000\000");
 		TIFFSetField(tif, TIFFTAG_DNGBACKWARDVERSION, "\001\000\000\000");
 		TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, unique_model.c_str());
 		TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
 		TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 3);
 		TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-		TIFFSetField(tif, TIFFTAG_SOFTWARE, "shadowgraph-v3");
+		TIFFSetField(tif, TIFFTAG_SOFTWARE, "Glider-Cam");
 		TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, CAM_XYZ.m);
 		TIFFSetField(tif, TIFFTAG_ASSHOTNEUTRAL, 3, NEUTRAL);
 		TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 21);

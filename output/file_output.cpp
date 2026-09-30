@@ -189,7 +189,7 @@ void FileOutput::saveDng(void *mem) {
 	std::string filename = fileNameManager_.getNextFileName();
 	StreamInfo *info = this->getStreamInfo();
 
-	dng_save(mem, *info, metadata, filename, "shadowgraph-v3", options_);
+	dng_save(mem, *info, metadata, filename, "Glider-Cam", options_);
 }
 
 void FileOutput::savePng(void *mem) {

@@ -117,9 +117,9 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		exif_set_string(entry, MAKE_STRING);
 		// Add MODEL tag - Windows Explorer often looks for this
 		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_MODEL);
-		exif_set_string(entry, std::string("Shadowgraph-v3 (SN: " + camera_serial_number + ")").c_str()); // Generic model name
+		exif_set_string(entry, std::string("Glider-Cam (SN: " + camera_serial_number + ")").c_str()); // Generic model name
 		entry = exif_create_tag(exif, EXIF_IFD_0, EXIF_TAG_SOFTWARE);
-		exif_set_string(entry, "Shadowgraph-v3");
+		exif_set_string(entry, "Glider-Cam");
 		
 		// Add date/time to IFD0 for Windows Explorer compatibility
 		std::time_t raw_time;
@@ -149,22 +149,17 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 		auto agDefined = metadata.Get(std::string("exif_data.analogue_gain"), ag);
 		if (agDefined == 0)
 		{
-			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
-		}
-
-		float dg = 1.0;
-		auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
-		if (dgDefined == 0)
-		{
+			float dg = 1.0;
+			auto dgDefined = metadata.Get(std::string("exif_data.digital_gain"), dg);
 			float gain = ag * (dgDefined == 0 ? dg : 1.0);
+			entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
 			exif_set_short(entry->data, exif_byte_order, (ExifShort)(100 * gain));
 		}
 
-		// Add fixed f-stop (aperture) value of f/16 to EXIF metadata
+		// Add fixed f-stop (aperture) value of f/1.9 to EXIF metadata
 		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FNUMBER);
-		// EXIF f-stop is a rational value: numerator=focal/aperture, denominator=1 (for whole numbers)
-		// For f/16, value is 16/1
-		ExifRational fnumber = { 16, 1 }; // f/16
+		// EXIF f-stop is a rational value, so 19/10 = f/1.9
+		ExifRational fnumber = { 19, 10 }; // f/1.9
 		exif_set_rational(entry->data, exif_byte_order, fnumber);
 
 		// Add lamp color to EXIF metadata as user comment
@@ -175,10 +170,10 @@ static void create_exif_data(Metadata const &metadata, uint8_t *&exif_buffer, un
 			exif_set_string(entry, std::string("Lamp color: " + lamp_color).c_str());
 		}
 
-		// Set focal length to 12mm in EXIF
+		// Set focal length to 4.2mm in EXIF
 		entry = exif_create_tag(exif, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH);
-		// EXIF focal length is a rational value, so 12/1 = 12mm
-		ExifRational focal_length = { 12, 1 };
+		// EXIF focal length is a rational value, so 42/10 = 4.2mm
+		ExifRational focal_length = { 42, 10 };
 		exif_set_rational(entry->data, exif_byte_order, focal_length);
 
 		// Add camera serial number to EXIF metadata
