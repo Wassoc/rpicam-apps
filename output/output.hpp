@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <cstdio>
 
 #include <atomic>
@@ -40,6 +41,7 @@ protected:
 	};
 	virtual void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags);
 	virtual void timestampReady(int64_t timestamp);
+	int64_t output_timestamp_us_ = 0;
 	VideoOptions const *options_;
 	FILE *fp_timestamps_;
 	std::queue<libcamera::ControlList> metadata_queue_;

@@ -159,10 +159,11 @@ void RPiCamApp::OpenCamera()
 
 	LOG(2, "Acquired camera " << cam_id);
 
-	if (!options_->Get().post_process_file.empty())
+	if (!options_->Get().post_process_file.empty() || options_->Get().shadowgraph_detect)
 	{
 		post_processor_.LoadModules(options_->Get().post_process_libs);
-		post_processor_.Read(options_->Get().post_process_file);
+		if (!options_->Get().post_process_file.empty())
+			post_processor_.Read(options_->Get().post_process_file);
 	}
 	// The queue takes over ownership from the post-processor.
 	post_processor_.SetCallback(
@@ -210,6 +211,20 @@ void RPiCamApp::OpenCamera()
 		libcamera::logSetLevel("RPI", "INFO");
 		libcamera::logSetLevel("Camera", "INFO");
 	}
+}
+
+bool RPiCamApp::HasPostProcessStage(const std::string &name) const
+{
+	return post_processor_.HasStage(name);
+}
+
+void ShadowgraphDetectCvEnsureLinked() __attribute__((weak));
+
+PostProcessingStage *RPiCamApp::MakePostProcessStage(char const *name)
+{
+	if (ShadowgraphDetectCvEnsureLinked)
+		ShadowgraphDetectCvEnsureLinked();
+	return post_processor_.MakeStage(name);
 }
 
 void RPiCamApp::CloseCamera()

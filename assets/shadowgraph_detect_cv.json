@@ -1,0 +1,12 @@
+{
+    "shadowgraph_detect_cv":
+    {
+        "edge_zone": false,
+        "units": "mm",
+        "rois": false,
+        "min_size": "",
+        "size_distribution": false,
+        "line_thickness": 2,
+        "font_size": 0.45
+    }
+}

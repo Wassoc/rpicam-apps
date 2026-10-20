@@ -32,7 +32,10 @@ private:
 	void saveDng(void *mem);
 	void savePng(void *mem);
 	void saveFile(void *mem, size_t size, int64_t timestamp_us, uint32_t flags);
+	void writeShadowgraphSidecar();
 	FILE *fp_;
 	int64_t file_start_time_ms_;
 	FileNameManager fileNameManager_;
+	fs::path last_sidecar_image_;
+	unsigned int sidecar_frame_ = 0;
 };

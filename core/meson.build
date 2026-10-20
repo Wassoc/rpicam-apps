@@ -9,6 +9,7 @@ rpicam_app_src += files([
     'rpicam_app.cpp',
     'options.cpp',
     'post_processor.cpp',
+    'shadowgraph_results.cpp',
 ])
 
 core_headers = files([
@@ -23,6 +24,7 @@ core_headers = files([
     'options.hpp',
     'post_processor.hpp',
     'still_options.hpp',
+    'shadowgraph_results.hpp',
     'stream_info.hpp',
     'version.hpp',
     'video_options.hpp',

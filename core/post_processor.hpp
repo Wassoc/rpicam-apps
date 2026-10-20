@@ -58,6 +58,10 @@ public:
 
 	void Read(std::string const &filename);
 
+	bool HasStage(const std::string &name) const;
+
+	PostProcessingStage *MakeStage(char const *name);
+
 	void SetCallback(PostProcessorCallback callback);
 
 	void AdjustConfig(std::string const &use_case, StreamConfiguration *config);
@@ -87,4 +91,5 @@ private:
 	PostProcessorCallback callback_;
 	std::mutex mutex_;
 	std::condition_variable cv_;
+	bool modules_loaded_ = false;
 };

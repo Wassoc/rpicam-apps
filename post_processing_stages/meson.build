@@ -59,7 +59,13 @@ if opencv_dep.found()
         assets_dir / 'sobel_cv.json',
         assets_dir / 'face_detect_cv.json',
         assets_dir / 'annotate_cv.json',
+        assets_dir / 'shadowgraph_detect_cv.json',
     ])
+
+    # Linked into rpicam_app so results stay in one library. The OpenCV module
+    # still has to be enabled; without it this stage is not built.
+    rpicam_app_src += files('shadowgraph_detect_cv_stage.cpp')
+    rpicam_app_dep += [opencv_dep, json_dep]
 
     opencv_postproc_lib = shared_module('opencv-postproc', opencv_postproc_src,
                                         include_directories : '../',

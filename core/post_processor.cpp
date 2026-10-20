@@ -85,6 +85,10 @@ PostProcessor::~PostProcessor()
 
 void PostProcessor::LoadModules(const std::string &lib_dir)
 {
+	if (modules_loaded_)
+		return;
+	modules_loaded_ = true;
+
 	const fs::path path(!lib_dir.empty() ? lib_dir : POSTPROC_LIB_DIR);
 	const std::string ext(".so");
 
@@ -141,6 +145,12 @@ void PostProcessor::Read(std::string const &filename)
 		}
 		else
 		{
+			// rpicam-raw runs this stage itself, and only on frames it saves.
+			if (key_and_value.first == "shadowgraph_detect_cv" && app_->GetOptions()->Get().shadowgraph_detect)
+			{
+				LOG(1, "shadowgraph_detect_cv is enabled from the command line; skipping the post-process file entry");
+				continue;
+			}
 			PostProcessingStage *stage = createPostProcessingStage(key_and_value.first.c_str());
 			if (stage)
 			{
@@ -158,6 +168,21 @@ PostProcessingStage *PostProcessor::createPostProcessingStage(char const *name)
 {
 	auto it = GetPostProcessingStages().find(std::string(name));
 	return it != GetPostProcessingStages().end() ? (*it->second)(app_) : nullptr;
+}
+
+bool PostProcessor::HasStage(const std::string &name) const
+{
+	for (auto const &stage : stages_)
+	{
+		if (name == stage->Name())
+			return true;
+	}
+	return false;
+}
+
+PostProcessingStage *PostProcessor::MakeStage(char const *name)
+{
+	return createPostProcessingStage(name);
 }
 
 void PostProcessor::SetCallback(PostProcessorCallback callback)

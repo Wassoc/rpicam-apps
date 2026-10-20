@@ -15,9 +15,11 @@
 #include "image/image.hpp"
 #include <libcamera/control_ids.h>
 #include <libcamera/formats.h>
+#include "core/logging.hpp"
 #include "core/still_options.hpp"
 #include "core/stream_info.hpp"
 #include "core/options.hpp"
+#include "core/shadowgraph_results.hpp"
 #include <nlohmann/json.hpp>
 
 namespace fs = std::filesystem;
@@ -130,9 +132,66 @@ FileOutput::~FileOutput()
 	closeFile();
 }
 
+void FileOutput::writeShadowgraphSidecar()
+{
+	ShadowgraphSidecar sidecar;
+	if (!ShadowgraphResults::Take(output_timestamp_us_, sidecar))
+	{
+		if (options_->Get().shadowgraph_detect && ShadowgraphResults::Pending() > 0)
+			LOG(2, "shadowgraph sidecar did not match frame timestamp " << output_timestamp_us_);
+		return;
+	}
+
+	fs::path image(fileNameManager_.getCurrentFileName());
+	if (image.empty())
+	{
+		LOG(1, "shadowgraph results were not written; the output file name is empty");
+		return;
+	}
+
+	std::string stem = image.stem().string();
+	if (!last_sidecar_image_.empty() && image == last_sidecar_image_)
+		stem += "-" + std::to_string(++sidecar_frame_);
+	else
+	{
+		last_sidecar_image_ = image;
+		sidecar_frame_ = 0;
+	}
+
+	json document;
+	try
+	{
+		document = json::parse(sidecar.json);
+	}
+	catch (const json::parse_error &e)
+	{
+		throw std::runtime_error(std::string("shadowgraph JSON is invalid: ") + e.what());
+	}
+	document["image"] = image.string();
+
+	fs::path json_path = image.parent_path() / (stem + ".json");
+	{
+		std::ofstream out(json_path);
+		if (!out)
+			throw std::runtime_error("failed to write shadowgraph JSON " + json_path.string());
+		out << document.dump(2) << "\n";
+	}
+	LOG(2, "shadowgraph measurements: " << json_path.string());
+
+	for (const ShadowgraphRoi &roi : sidecar.rois)
+	{
+		fs::path roi_path = image.parent_path() / (stem + "-roi-" + std::to_string(roi.id) + ".png");
+		std::ofstream out(roi_path, std::ios::binary);
+		if (!out)
+			throw std::runtime_error("failed to write shadowgraph ROI " + roi_path.string());
+		out.write(reinterpret_cast<const char *>(roi.png.data()), static_cast<std::streamsize>(roi.png.size()));
+	}
+}
+
 void FileOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
 {
 	saveFile(mem, size, timestamp_us, flags);
+	writeShadowgraphSidecar();
 
 	bool isFirstFrame = fileNameManager_.getImagesWritten() == 1;
 	std::string metadataFilename = options_->Get().output_metadata_location;

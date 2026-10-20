@@ -6,10 +6,16 @@
  */
 
 #include <chrono>
+#include <memory>
 #include <signal.h>
 
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+
 #include "core/rpicam_encoder.hpp"
+#include "core/shadowgraph_results.hpp"
 #include "core/stream_info.hpp"
+#include "post_processing_stages/post_processing_stage.hpp"
 #include "encoder/null_encoder.hpp"
 #include "encoder/mjpeg_encoder.hpp"
 #include "encoder/png_encoder.hpp"
@@ -48,6 +54,17 @@ protected:
 
 // The main even loop for the application.
 
+static int64_t frameTimestampUs(const CompletedRequestPtr &completed_request, libcamera::Stream *stream)
+{
+	auto ts = completed_request->metadata.get(controls::FrameWallClock);
+	return ts ? *ts : completed_request->buffers[stream]->metadata().timestamp / 1000;
+}
+
+static void discardShadowgraph(const CompletedRequestPtr &completed_request, libcamera::Stream *stream)
+{
+	ShadowgraphResults::Discard(frameTimestampUs(completed_request, stream));
+}
+
 static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 {
 	unsigned int framesCaptured = 0;
@@ -65,6 +82,30 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 		lampHandler->setNextLampColor();
 	}
 	app.OpenCamera();
+	std::unique_ptr<PostProcessingStage> shadowgraph;
+	if (options->Get().shadowgraph_detect && !app.HasPostProcessStage("shadowgraph_detect_cv"))
+	{
+		PostProcessingStage *stage = app.MakePostProcessStage("shadowgraph_detect_cv");
+		if (!stage)
+			LOG_ERROR("shadowgraph_detect_cv is not available; rebuild rpicam-apps with OpenCV enabled");
+		else
+		{
+			boost::property_tree::ptree params;
+			if (!options->Get().post_process_file.empty())
+			{
+				boost::property_tree::ptree root;
+				boost::property_tree::read_json(options->Get().post_process_file, root);
+				auto it = root.find("shadowgraph_detect_cv");
+				if (it != root.not_found())
+					params = it->second;
+			}
+			stage->Read(params);
+			shadowgraph.reset(stage);
+			LOG(1, "Shadowgraph detect enabled");
+		}
+	}
+	else if (options->Get().shadowgraph_detect)
+		LOG(1, "Shadowgraph detect enabled from the post-process file");
 	if (options->Get().force_jpeg) {
 		app.ConfigureVideo(RPiCamEncoder::FLAG_VIDEO_JPEG_COLOURSPACE);
 	} else if (options->Get().force_still) {
@@ -72,6 +113,8 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	} else {
 		app.ConfigureRawStream();
 	}
+	if (shadowgraph)
+		shadowgraph->Configure();
 	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
@@ -102,7 +145,10 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 		LibcameraRaw::Msg msg = app.Wait();
 
 		if (count == -1) {
-			// Skip the first frame to allow the camera to warm up
+			// Skip the first frame to allow the camera to warm up.
+			// A post-process-file stage may already have published a result.
+			if (msg.type == LibcameraRaw::MsgType::RequestComplete)
+				discardShadowgraph(std::get<CompletedRequestPtr>(msg.payload), currentStream);
 			continue;
 		}
 
@@ -128,6 +174,8 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 		auto now = std::chrono::high_resolution_clock::now();
 		if (options->Get().timeout && (now - start_time) > options->Get().timeout.value)
 		{
+			if (msg.type == LibcameraRaw::MsgType::RequestComplete)
+				discardShadowgraph(std::get<CompletedRequestPtr>(msg.payload), currentStream);
 			app.StopCamera();
 			app.StopEncoder();
 			return;
@@ -139,6 +187,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 				lampHandler->setNextLampColor();
 			}
 			if (nth_frame != 0) {
+				discardShadowgraph(std::get<CompletedRequestPtr>(msg.payload), currentStream);
 				continue;
 			}
 		} else if (options->Get().capture_interval && options->Get().capture_interval > 0.0f) {
@@ -146,6 +195,7 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			if (time_since_last_capture >= options->Get().capture_interval) {
 				last_capture_time = now;
 			} else {
+				discardShadowgraph(std::get<CompletedRequestPtr>(msg.payload), currentStream);
 				continue;
 			}
 		}
@@ -161,10 +211,13 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			completed_request->post_process_metadata.Set("exif_data.lamp_color", currentLampColor);
 			completed_request->post_process_metadata.Set("exif_data.camera_serial_number", options->Get().camera_serial_number);
 		}
+		if (shadowgraph)
+			shadowgraph->Process(completed_request);
 		if (!app.EncodeBuffer(completed_request, currentStream))
 		{
 			// Keep advancing our "start time" if we're still waiting to start recording (e.g.
 			// waiting for synchronisation with another camera).
+			discardShadowgraph(completed_request, currentStream);
 			start_time = now;
 		}
 		framesCaptured++;

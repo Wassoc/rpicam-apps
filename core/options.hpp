@@ -275,6 +275,12 @@ struct OptsInternal
 	std::string output_metadata_location;
 	bool fire_and_forget;
 	std::string camera_serial_number;
+	bool shadowgraph_detect;
+	bool shadowgraph_edge_zone;
+	std::string shadowgraph_units;
+	bool shadowgraph_rois;
+	std::string shadowgraph_min_size;
+	bool shadowgraph_size_distribution;
 	// End Wassoc custom options
 	
 	bool hflip_;

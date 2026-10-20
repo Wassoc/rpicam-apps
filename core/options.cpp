@@ -5,6 +5,7 @@
  * options.cpp - common program options helpers
  */
 #include <algorithm>
+#include <cctype>
 #include <fcntl.h>
 #include <filesystem>
 #include <iomanip>
@@ -20,6 +21,7 @@
 #include <libcamera/property_ids.h>
 
 #include "core/options.hpp"
+#include "core/shadowgraph_results.hpp"
 
 namespace fs = std::filesystem;
 
@@ -358,6 +360,18 @@ Options::Options()
 			"Fire and forget the lamp commands")
 		("camera-serial-number", value<std::string>(&v_->camera_serial_number)->default_value(""),
 			"Set the serial number of the camera (used for EXIF data)")
+		("shadowgraph-detect", value<bool>(&v_->shadowgraph_detect)->default_value(false)->implicit_value(true),
+			"Detect telecentric shadowgraph objects and draw oriented boxes on saved frames")
+		("shadowgraph-edge-zone", value<bool>(&v_->shadowgraph_edge_zone)->default_value(false)->implicit_value(true),
+			"Also detect thin shadows in the outer aperture band")
+		("shadowgraph-units", value<std::string>(&v_->shadowgraph_units)->default_value("mm"),
+			"Units drawn on each box: mm, in, or px")
+		("shadowgraph-rois", value<bool>(&v_->shadowgraph_rois)->default_value(false)->implicit_value(true),
+			"Write a grayscale PNG crop for every detection")
+		("shadowgraph-min-size", value<std::string>(&v_->shadowgraph_min_size)->default_value(""),
+			"Drop a detection only when width, height, length, and thickness are all below this size (default unit mm)")
+		("shadowgraph-size-distribution", value<bool>(&v_->shadowgraph_size_distribution)->default_value(false)->implicit_value(true),
+			"Add length, thickness, and area distribution to each frame's JSON")
 		// End Wassoc custom options
 		;
 	// clang-format on
@@ -751,6 +765,12 @@ void OptsInternal::Print() const
 	std::cerr << "    ev: " << ev << std::endl;
 	std::cerr << "    awb: " << awb << std::endl;
 	std::cerr << "    monochrome: " << monochrome << std::endl;
+	std::cerr << "    shadowgraph-detect: " << shadowgraph_detect << std::endl;
+	std::cerr << "    shadowgraph-edge-zone: " << shadowgraph_edge_zone << std::endl;
+	std::cerr << "    shadowgraph-units: " << shadowgraph_units << std::endl;
+	std::cerr << "    shadowgraph-rois: " << shadowgraph_rois << std::endl;
+	std::cerr << "    shadowgraph-min-size: " << shadowgraph_min_size << std::endl;
+	std::cerr << "    shadowgraph-size-distribution: " << shadowgraph_size_distribution << std::endl;
 	if (awb_gain_r && awb_gain_b)
 		std::cerr << "    awb gains: red " << awb_gain_r << " blue " << awb_gain_b << std::endl;
 	std::cerr << "    flush: " << (flush ? "true" : "false") << std::endl;
@@ -841,6 +861,19 @@ bool OptsInternal::ParseVideo()
 	else
 		throw std::runtime_error("incorrect sync value " + sync_);
 #endif
+
+	for (char &c : shadowgraph_units)
+		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	if (shadowgraph_units != "mm" && shadowgraph_units != "in" && shadowgraph_units != "px")
+		throw std::runtime_error("Unknown shadowgraph units: " + shadowgraph_units + ". Use mm, in, or px.");
+	if (!shadowgraph_min_size.empty())
+	{
+		double value;
+		std::string unit;
+		std::string error;
+		if (!ParseShadowgraphMinSize(shadowgraph_min_size, value, unit, error))
+			throw std::runtime_error(error);
+	}
 
 	return true;
 }

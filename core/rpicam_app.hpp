@@ -134,6 +134,8 @@ public:
 	std::string CameraModel() const;
 	void OpenCamera();
 	void CloseCamera();
+	bool HasPostProcessStage(const std::string &name) const;
+	PostProcessingStage *MakePostProcessStage(char const *name);
 
 	void ConfigureViewfinder();
 	void ConfigureStill(unsigned int flags = FLAG_STILL_NONE);
