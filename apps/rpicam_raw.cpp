@@ -23,9 +23,6 @@
 #include "output/output.hpp"
 #include "wassoc-utils/gpiohandler.hpp"
 
-
-using namespace std::placeholders;
-
 // Signal handling
 static volatile int signal_received = 0;
 
@@ -72,8 +69,9 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 	StreamInfo info;
 	VideoOptions const *options = app.GetOptions();
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
-	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
-	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), _1));
+	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), std::placeholders::_1,
+											 std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	app.SetMetadataReadyCallback(std::bind(&Output::MetadataReady, output.get(), std::placeholders::_1));
 
 	if (options->Get().every_nth_frame > 1) {
 		everyNthFrameEnabled = true;
