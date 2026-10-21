@@ -322,13 +322,10 @@ public:
         return current_lamp_color;
     }
 
-    void setNextLampColor() {
+    // Re-assert the color that is already selected, without advancing the pattern.
+    void enableCurrentChannels() {
         bool wasColorSet = false;
-        if (lamp_pattern_index == lamp_pattern_vec.size()) {
-            lamp_pattern_index = 0;
-        }
         std::string active_channels = "";
-        current_lamp_color = lamp_pattern_vec[lamp_pattern_index];
         for (unsigned int i = 0; i < current_lamp_color.size(); i++) {
             char letter = current_lamp_color[i];
             if (letter == 'R' || letter == 'r') {
@@ -353,7 +350,14 @@ public:
             // sending a 'on' command will update the LED channels to match the set active channels
             turnOnLamp();
         }
-        
+    }
+
+    void setNextLampColor() {
+        if (lamp_pattern_index == lamp_pattern_vec.size()) {
+            lamp_pattern_index = 0;
+        }
+        current_lamp_color = lamp_pattern_vec[lamp_pattern_index];
+        enableCurrentChannels();
         lamp_pattern_index++;
     }
 

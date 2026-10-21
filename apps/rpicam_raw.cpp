@@ -203,6 +203,12 @@ static void event_loop(LibcameraRaw &app, GpioHandler* lampHandler)
 			std::string currentLampColor = lampHandler->getCurrentLampColor();
 			if (everyNthFrameEnabled) {
 				lampHandler->disableAllChannels();
+				// Detection and PNG encode can block long enough that the next
+				// saved frame is already exposed before setNextLampColor runs.
+				// Restore this color now; the pattern still advances on the
+				// skipped frame immediately before the next save.
+				if (shadowgraph)
+					lampHandler->enableCurrentChannels();
 			} else {
 				lampHandler->setNextLampColor();
 			}
