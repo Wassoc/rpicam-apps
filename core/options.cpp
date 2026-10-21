@@ -372,6 +372,8 @@ Options::Options()
 			"Drop a detection only when width, height, length, and thickness are all below this size (default unit mm)")
 		("shadowgraph-size-distribution", value<bool>(&v_->shadowgraph_size_distribution)->default_value(false)->implicit_value(true),
 			"Add length, thickness, and area distribution to each frame's JSON")
+		("shadowgraph-json", value<bool>(&v_->shadowgraph_json)->default_value(false)->implicit_value(true),
+			"Write a JSON file of the measurements next to each saved frame. Leave this off when streaming.")
 		// End Wassoc custom options
 		;
 	// clang-format on
@@ -771,6 +773,7 @@ void OptsInternal::Print() const
 	std::cerr << "    shadowgraph-rois: " << shadowgraph_rois << std::endl;
 	std::cerr << "    shadowgraph-min-size: " << shadowgraph_min_size << std::endl;
 	std::cerr << "    shadowgraph-size-distribution: " << shadowgraph_size_distribution << std::endl;
+	std::cerr << "    shadowgraph-json: " << shadowgraph_json << std::endl;
 	if (awb_gain_r && awb_gain_b)
 		std::cerr << "    awb gains: red " << awb_gain_r << " blue " << awb_gain_b << std::endl;
 	std::cerr << "    flush: " << (flush ? "true" : "false") << std::endl;

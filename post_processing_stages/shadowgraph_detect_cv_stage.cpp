@@ -5,7 +5,8 @@
  * Port of sg-object-detect/sg_object_detect.py. The base path ignores the
  * outer aperture band. Edge zone, annotation units, ROI crops, minimum size,
  * and the size distribution are off unless enabled. Boxes are drawn on the
- * frame that rpicam-raw encodes. Measurements are stored as a JSON sidecar.
+ * frame that rpicam-raw encodes. Measurements are only collected as a JSON
+ * sidecar when "json" is enabled, which needs a file output to receive it.
  */
 
 #include <algorithm>
@@ -149,6 +150,7 @@ private:
 	std::string units_ = "mm";
 	bool rois_ = false;
 	bool size_distribution_ = false;
+	bool json_ = false;
 	bool min_size_enabled_ = false;
 	double min_size_ = 0.0;
 	std::string min_size_unit_ = "mm";
@@ -181,6 +183,7 @@ void ShadowgraphDetectCvStage::Read(boost::property_tree::ptree const &params)
 	units_ = params.get<std::string>("units", units_);
 	rois_ = params.get<bool>("rois", rois_);
 	size_distribution_ = params.get<bool>("size_distribution", size_distribution_);
+	json_ = params.get<bool>("json", json_);
 	line_thickness_ = params.get<int>("line_thickness", line_thickness_);
 	font_size_ = params.get<double>("font_size", font_size_);
 	std::string min_size_text = params.get<std::string>("min_size", "");
@@ -192,6 +195,7 @@ void ShadowgraphDetectCvStage::Read(boost::property_tree::ptree const &params)
 		units_ = opt.shadowgraph_units;
 		rois_ = opt.shadowgraph_rois;
 		size_distribution_ = opt.shadowgraph_size_distribution;
+		json_ = opt.shadowgraph_json;
 		min_size_text = opt.shadowgraph_min_size;
 	}
 
@@ -508,33 +512,39 @@ bool ShadowgraphDetectCvStage::Process(CompletedRequestPtr &completed_request)
 					font, font_size_, colour, 1, cv::LINE_AA);
 	}
 
-	json detections = json::array();
-	for (const Found &item : found)
-		detections.push_back(detectionJson(item));
+	// Nothing collects a sidecar unless a file is being written, so skip the work when both are off.
+	if (json_ || !roi_pngs.empty())
+	{
+		ShadowgraphSidecar sidecar;
+		if (json_)
+		{
+			json detections = json::array();
+			for (const Found &item : found)
+				detections.push_back(detectionJson(item));
 
-	json document = {
-		{ "image", "" },
-		{ "image_width_px", info.width },
-		{ "image_height_px", info.height },
-		{ "imaging_diameter_px", imaging_diameter_px_ },
-		{ "imaging_diameter_in", imaging_diameter_in_ },
-		{ "imaging_diameter_mm", imaging_diameter_mm_ },
-		{ "edge_zone", edge_zone_ },
-		{ "annotation_units", units_ },
-		{ "rois", rois_ },
-		{ "min_size", min_size_enabled_ ? json(min_size_) : json() },
-		{ "min_size_unit", min_size_enabled_ ? json(min_size_unit_) : json() },
-		{ "size_distribution", size_distribution_ ? sizeDistribution(found) : json() },
-		{ "object_count", found.size() },
-		{ "detections", detections },
-	};
-
-	ShadowgraphSidecar sidecar;
-	sidecar.json = document.dump(2);
-	sidecar.rois = std::move(roi_pngs);
-	auto ts = completed_request->metadata.get(controls::FrameWallClock);
-	int64_t timestamp_us = ts ? *ts : completed_request->buffers[stream_]->metadata().timestamp / 1000;
-	ShadowgraphResults::Publish(timestamp_us, std::move(sidecar));
+			json document = {
+				{ "image", "" },
+				{ "image_width_px", info.width },
+				{ "image_height_px", info.height },
+				{ "imaging_diameter_px", imaging_diameter_px_ },
+				{ "imaging_diameter_in", imaging_diameter_in_ },
+				{ "imaging_diameter_mm", imaging_diameter_mm_ },
+				{ "edge_zone", edge_zone_ },
+				{ "annotation_units", units_ },
+				{ "rois", rois_ },
+				{ "min_size", min_size_enabled_ ? json(min_size_) : json() },
+				{ "min_size_unit", min_size_enabled_ ? json(min_size_unit_) : json() },
+				{ "size_distribution", size_distribution_ ? sizeDistribution(found) : json() },
+				{ "object_count", found.size() },
+				{ "detections", detections },
+			};
+			sidecar.json = document.dump(2);
+		}
+		sidecar.rois = std::move(roi_pngs);
+		auto ts = completed_request->metadata.get(controls::FrameWallClock);
+		int64_t timestamp_us = ts ? *ts : completed_request->buffers[stream_]->metadata().timestamp / 1000;
+		ShadowgraphResults::Publish(timestamp_us, std::move(sidecar));
+	}
 
 	double elapsed_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
 	LOG(1, "shadowgraph: " << found.size() << " shadows in " << static_cast<int>(elapsed_ms) << " ms");

@@ -158,25 +158,29 @@ void FileOutput::writeShadowgraphSidecar()
 		sidecar_frame_ = 0;
 	}
 
-	json document;
-	try
+	// The JSON is only populated when it was asked for. ROI crops can arrive on their own.
+	if (!sidecar.json.empty())
 	{
-		document = json::parse(sidecar.json);
-	}
-	catch (const json::parse_error &e)
-	{
-		throw std::runtime_error(std::string("shadowgraph JSON is invalid: ") + e.what());
-	}
-	document["image"] = image.string();
+		json document;
+		try
+		{
+			document = json::parse(sidecar.json);
+		}
+		catch (const json::parse_error &e)
+		{
+			throw std::runtime_error(std::string("shadowgraph JSON is invalid: ") + e.what());
+		}
+		document["image"] = image.string();
 
-	fs::path json_path = image.parent_path() / (stem + ".json");
-	{
-		std::ofstream out(json_path);
-		if (!out)
-			throw std::runtime_error("failed to write shadowgraph JSON " + json_path.string());
-		out << document.dump(2) << "\n";
+		fs::path json_path = image.parent_path() / (stem + ".json");
+		{
+			std::ofstream out(json_path);
+			if (!out)
+				throw std::runtime_error("failed to write shadowgraph JSON " + json_path.string());
+			out << document.dump(2) << "\n";
+		}
+		LOG(2, "shadowgraph measurements: " << json_path.string());
 	}
-	LOG(2, "shadowgraph measurements: " << json_path.string());
 
 	for (const ShadowgraphRoi &roi : sidecar.rois)
 	{

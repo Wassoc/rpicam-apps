@@ -281,6 +281,7 @@ struct OptsInternal
 	bool shadowgraph_rois;
 	std::string shadowgraph_min_size;
 	bool shadowgraph_size_distribution;
+	bool shadowgraph_json;
 	// End Wassoc custom options
 	
 	bool hflip_;

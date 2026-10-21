@@ -6,6 +6,7 @@
         "rois": false,
         "min_size": "",
         "size_distribution": false,
+        "json": false,
         "line_thickness": 2,
         "font_size": 0.45
     }
